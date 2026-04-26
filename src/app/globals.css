@@ -228,6 +228,90 @@ h1, h2, h3 {
   font-family: "Jura", sans-serif;
 }
 
+.align-start {
+  align-items: flex-start;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.preview-grid,
+.stack-list,
+.note-form,
+.action-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.preview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.preview-frame,
+.preview-button {
+  border: 1px solid var(--card-border);
+  background: rgba(255,255,255,0.03);
+  border-radius: 1rem;
+  padding: 0.65rem;
+}
+
+.preview-button {
+  text-align: left;
+}
+
+.preview-button.is-selected {
+  border-color: rgba(168,85,247,0.9);
+  box-shadow: 0 0 0 1px rgba(168,85,247,0.45);
+}
+
+.preview-button img,
+.mini-thumb img {
+  width: 100%;
+  border-radius: 0.75rem;
+  display: block;
+}
+
+.list-row,
+.note-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 1rem;
+  background: rgba(255,255,255,0.03);
+}
+
+.list-row {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.mini-thumb {
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: rgba(0,0,0,0.3);
+}
+
+.mini-state {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.empty-inline {
+  color: var(--muted);
+}
+
+.actions-panel {
+  position: sticky;
+  top: 5.5rem;
+}
+
 @media (max-width: 900px) {
   .detail-grid {
     grid-template-columns: 1fr;
