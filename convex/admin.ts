@@ -82,3 +82,25 @@ export const deleteProjectCascade = mutation({
     return args.projectId;
   },
 });
+
+export const renameProject = mutation({
+  args: {
+    projectId: v.id("projects"),
+    name: v.string(),
+    slug: v.string(),
+    description: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project) throw new Error("Project not found");
+
+    await ctx.db.patch(args.projectId, {
+      name: args.name,
+      slug: args.slug,
+      description: args.description,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return args.projectId;
+  },
+});
