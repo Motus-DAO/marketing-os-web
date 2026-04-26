@@ -6,13 +6,15 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { EmptyState } from "@/components/ui/empty-state";
-import { AssetHeader, CarouselPreview, ReviewNoteList, VersionList } from "@/components/dashboard/detail-sections";
+import { AssetHeader, CarouselPreview, ReviewActionBar, ReviewNoteList, VersionList } from "@/components/dashboard/detail-sections";
 import { FeedbackForm } from "@/components/dashboard/feedback-form";
 
 export default function AssetDetailPage() {
   const params = useParams<{ assetId: string }>();
   const data = useQuery(api.dashboard.getAssetDetail, params?.assetId ? { assetId: params.assetId as any } : "skip");
   const createFeedbackComment = useMutation(api.dashboard.createFeedbackComment);
+  const setCurrentVersion = useMutation(api.dashboard.setCurrentVersion);
+  const setAssetVersionReviewState = useMutation(api.dashboard.setAssetVersionReviewState);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const createAssetReference = useMutation(api.files.createAssetReference);
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
@@ -118,6 +120,30 @@ export default function AssetDetailPage() {
     }
   }
 
+  async function handleSetCurrent(versionId: string) {
+    if (!data?.asset?._id) return;
+    setIsSaving(true);
+    try {
+      await setCurrentVersion({ assetId: data.asset._id, versionId: versionId as any });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleReviewState(state: "approved" | "rejected" | "needs_changes" | "in_review") {
+    if (!data?.asset?._id || !data?.currentVersion?._id) return;
+    setIsSaving(true);
+    try {
+      await setAssetVersionReviewState({
+        assetId: data.asset._id,
+        versionId: data.currentVersion._id,
+        reviewState: state,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <section className="page-stack">
       <div className="page-header-row">
@@ -217,15 +243,8 @@ export default function AssetDetailPage() {
         </div>
 
         <div className="detail-side">
-          <VersionList versions={data.versions} currentVersionId={data.asset.currentVersionId} />
-          <section className="panel actions-panel">
-            <div>
-              <p className="eyebrow">Actions</p>
-              <h2>Review state</h2>
-              <p className="muted">Current state: {data.asset.approvalState}</p>
-            </div>
-            <div className="empty-inline">Approve / reject / version switching is the next pass.</div>
-          </section>
+          <VersionList versions={data.versions} currentVersionId={data.asset.currentVersionId} onSetCurrent={handleSetCurrent} isUpdating={isSaving} />
+          <ReviewActionBar currentState={data.asset.approvalState} isUpdating={isSaving} onSetState={handleReviewState} />
         </div>
       </div>
     </section>

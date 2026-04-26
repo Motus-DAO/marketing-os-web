@@ -76,7 +76,7 @@ export function CarouselPreview({ version, selectedSlideIndex, onSelectSlide }: 
   );
 }
 
-export function VersionList({ versions, currentVersionId }: { versions: any[]; currentVersionId?: string }) {
+export function VersionList({ versions, currentVersionId, onSetCurrent, isUpdating }: { versions: any[]; currentVersionId?: string; onSetCurrent: (versionId: string) => void; isUpdating: boolean }) {
   return (
     <section className="panel">
       <div className="section-header">
@@ -98,13 +98,33 @@ export function VersionList({ versions, currentVersionId }: { versions: any[]; c
                   {titleCase(version.status)} • {formatDate(version.createdAt)}
                 </p>
               </div>
-              <span className="mini-state">{currentVersionId === version._id ? "Current" : "Version"}</span>
+              <button className="secondary-button" disabled={isUpdating || currentVersionId === version._id} onClick={() => onSetCurrent(version._id)}>
+                {currentVersionId === version._id ? "Current" : "Set current"}
+              </button>
             </div>
           ))}
         </div>
       ) : (
         <div className="empty-inline">No versions added yet.</div>
       )}
+    </section>
+  );
+}
+
+export function ReviewActionBar({ currentState, isUpdating, onSetState }: { currentState?: string; isUpdating: boolean; onSetState: (state: "approved" | "rejected" | "needs_changes" | "in_review") => void }) {
+  return (
+    <section className="panel actions-panel">
+      <div>
+        <p className="eyebrow">Actions</p>
+        <h2>Review state</h2>
+        <p className="muted">Current state: {titleCase(currentState)}</p>
+      </div>
+      <div className="action-grid">
+        <button className="secondary-button" disabled={isUpdating} onClick={() => onSetState("in_review")}>In review</button>
+        <button className="primary-button" disabled={isUpdating} onClick={() => onSetState("approved")}>Approve</button>
+        <button className="warning-button" disabled={isUpdating} onClick={() => onSetState("needs_changes")}>Needs changes</button>
+        <button className="danger-button" disabled={isUpdating} onClick={() => onSetState("rejected")}>Reject</button>
+      </div>
     </section>
   );
 }
