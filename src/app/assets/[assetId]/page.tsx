@@ -3,15 +3,26 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AssetHeader, CarouselPreview, ReviewNoteList, VersionList } from "@/components/dashboard/detail-sections";
+import { FeedbackForm } from "@/components/dashboard/feedback-form";
 
 export default function AssetDetailPage() {
   const params = useParams<{ assetId: string }>();
   const data = useQuery(api.dashboard.getAssetDetail, params?.assetId ? { assetId: params.assetId as any } : "skip");
+  const createFeedbackComment = useMutation(api.dashboard.createFeedbackComment);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const createAssetReference = useMutation(api.files.createAssetReference);
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
+  const [overallFeedback, setOverallFeedback] = useState("");
+  const [overallReferenceLabel, setOverallReferenceLabel] = useState("");
+  const [overallReferenceFile, setOverallReferenceFile] = useState<File | null>(null);
+  const [slideFeedback, setSlideFeedback] = useState("");
+  const [slideReferenceLabel, setSlideReferenceLabel] = useState("");
+  const [slideReferenceFile, setSlideReferenceFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const assetComments = useMemo(
     () => (data?.feedbackComments ?? []).filter((comment: any) => comment.scopeType === "asset"),
@@ -28,6 +39,83 @@ export default function AssetDetailPage() {
 
   if (!data) {
     return <EmptyState title="Asset not found" body="The selected asset does not exist or is not available yet." />;
+  }
+
+  async function persistReference(file: File | null, label: string) {
+    if (!file) return { referenceImageUrl: undefined, referenceLabel: label.trim() || undefined };
+    if (!data?.project?._id || !data?.asset?._id) {
+      throw new Error("Asset context missing");
+    }
+
+    const upload = await generateUploadUrl({});
+    const response = await fetch(upload, {
+      method: "POST",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: file,
+    });
+    const uploaded = await response.json();
+
+    const created = await createAssetReference({
+      projectId: data.project._id,
+      storageId: uploaded.storageId,
+      title: label.trim() || file.name,
+      mimeType: file.type,
+      relatedEntityType: "feedback_reference",
+      relatedEntityId: data.asset._id,
+      notes: "Uploaded from asset review flow.",
+      createdAt: new Date().toISOString(),
+    });
+    return {
+      referenceImageUrl: created.url ?? undefined,
+      referenceLabel: label.trim() || file.name,
+    };
+  }
+
+  async function submitOverallFeedback() {
+    if (!overallFeedback.trim() || !data?.asset?._id) return;
+    setIsSaving(true);
+    try {
+      const ref = await persistReference(overallReferenceFile, overallReferenceLabel);
+      await createFeedbackComment({
+        assetId: data.asset._id,
+        assetVersionId: data.currentVersion?._id,
+        scopeType: "asset",
+        body: overallFeedback.trim(),
+        referenceImageUrl: ref.referenceImageUrl,
+        referenceLabel: ref.referenceLabel,
+        authorType: "human",
+        authorId: "Gerry",
+      });
+      setOverallFeedback("");
+      setOverallReferenceLabel("");
+      setOverallReferenceFile(null);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function submitSlideFeedback() {
+    if (!slideFeedback.trim() || !data?.asset?._id) return;
+    setIsSaving(true);
+    try {
+      const ref = await persistReference(slideReferenceFile, slideReferenceLabel);
+      await createFeedbackComment({
+        assetId: data.asset._id,
+        assetVersionId: data.currentVersion?._id,
+        scopeType: "slide",
+        slideIndex: selectedSlideIndex,
+        body: slideFeedback.trim(),
+        referenceImageUrl: ref.referenceImageUrl,
+        referenceLabel: ref.referenceLabel,
+        authorType: "human",
+        authorId: "Gerry",
+      });
+      setSlideFeedback("");
+      setSlideReferenceLabel("");
+      setSlideReferenceFile(null);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -63,6 +151,7 @@ export default function AssetDetailPage() {
                       <span className="muted">{comment.status}</span>
                     </div>
                     <p>{comment.body}</p>
+                    {comment.referenceImageUrl ? <img className="feedback-reference-image" src={comment.referenceImageUrl} alt={comment.referenceLabel || "Reference"} /> : null}
                   </div>
                 ))}
               </div>
@@ -70,6 +159,20 @@ export default function AssetDetailPage() {
               <div className="empty-inline">No overall carousel feedback yet.</div>
             )}
           </section>
+
+          <FeedbackForm
+            title="Add overall feedback"
+            eyebrow="Feedback"
+            placeholder="Add narrative, structure, CTA, tone, or strategic feedback"
+            value={overallFeedback}
+            onChange={setOverallFeedback}
+            referenceLabel={overallReferenceLabel}
+            onReferenceLabelChange={setOverallReferenceLabel}
+            onFileChange={setOverallReferenceFile}
+            onSubmit={submitOverallFeedback}
+            disabled={isSaving || !overallFeedback.trim()}
+            buttonLabel="Save overall feedback"
+          />
 
           <section className="panel">
             <div className="section-header">
@@ -87,6 +190,7 @@ export default function AssetDetailPage() {
                       <span className="muted">{comment.status}</span>
                     </div>
                     <p>{comment.body}</p>
+                    {comment.referenceImageUrl ? <img className="feedback-reference-image" src={comment.referenceImageUrl} alt={comment.referenceLabel || "Reference"} /> : null}
                   </div>
                 ))}
               </div>
@@ -94,6 +198,20 @@ export default function AssetDetailPage() {
               <div className="empty-inline">No slide-specific feedback yet.</div>
             )}
           </section>
+
+          <FeedbackForm
+            title={`Comment on slide ${selectedSlideIndex + 1}`}
+            eyebrow="Slide feedback"
+            placeholder="Add precise feedback for this slide"
+            value={slideFeedback}
+            onChange={setSlideFeedback}
+            referenceLabel={slideReferenceLabel}
+            onReferenceLabelChange={setSlideReferenceLabel}
+            onFileChange={setSlideReferenceFile}
+            onSubmit={submitSlideFeedback}
+            disabled={isSaving || !slideFeedback.trim()}
+            buttonLabel="Save slide feedback"
+          />
 
           <ReviewNoteList notes={data.notes} />
         </div>
@@ -106,7 +224,7 @@ export default function AssetDetailPage() {
               <h2>Review state</h2>
               <p className="muted">Current state: {data.asset.approvalState}</p>
             </div>
-            <div className="empty-inline">Interactive review actions are the next pass.</div>
+            <div className="empty-inline">Approve / reject / version switching is the next pass.</div>
           </section>
         </div>
       </div>

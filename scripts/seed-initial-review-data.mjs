@@ -66,6 +66,7 @@ const items = [
     slug: "5-errores",
     title: "5 errores",
     cover: path.resolve(repoRoot, "../content/carousels/5-errores/cover.png"),
+    previewsDir: path.resolve(repoRoot, "../content/carousels/5-errores/previews"),
     objective: "Educational carousel review",
     sourceIdeaTitle: "IG carousel 5 errores",
   },
@@ -73,6 +74,7 @@ const items = [
     slug: "yo-ya-doy-terapia-online",
     title: "Yo ya doy terapia online",
     cover: path.resolve(repoRoot, "../content/carousels/yo-ya-doy-terapia-online/cover.png"),
+    previewsDir: path.resolve(repoRoot, "../content/carousels/yo-ya-doy-terapia-online/previews"),
     objective: "Positioning carousel review",
     sourceIdeaTitle: "Yo ya doy terapia online",
   },
@@ -80,6 +82,7 @@ const items = [
     slug: "masterclass-psicologia-digital",
     title: "Masterclass psicología digital",
     cover: path.resolve(repoRoot, "../content/carousels/masterclass-psicologia-digital/cover.png"),
+    previewsDir: path.resolve(repoRoot, "../content/carousels/masterclass-psicologia-digital/previews"),
     objective: "Launch carousel review",
     sourceIdeaTitle: "Masterclass psicología digital",
   },
@@ -87,6 +90,7 @@ const items = [
     slug: "dar-terapia-online-no-es-solo-cambiar-de-formato",
     title: "Dar terapia online no es solo cambiar de formato",
     cover: path.resolve(repoRoot, "../content/carousels/dar-terapia-online-no-es-solo-cambiar-de-formato/cover.png"),
+    previewsDir: path.resolve(repoRoot, "../content/carousels/dar-terapia-online-no-es-solo-cambiar-de-formato/previews"),
     objective: "Narrative carousel review",
     sourceIdeaTitle: "Dar terapia online no es solo cambiar de formato",
   },
@@ -123,12 +127,28 @@ for (const item of items) {
     primaryReferenceId,
   });
 
+  const previewUrls = [];
+  for (let i = 1; i <= 7; i += 1) {
+    const slidePath = path.join(item.previewsDir, `slide-0${i}.png`);
+    const slideStorageId = convexUpload(slidePath);
+    const slideRef = convexRun("files:createAssetReference", {
+      projectId,
+      storageId: slideStorageId,
+      title: `${item.title} slide ${i}`,
+      mimeType: "image/png",
+      relatedEntityType: "asset_version",
+      notes: `Seeded slide ${i} for carousel review flow.`,
+      createdAt: now,
+    });
+    previewUrls.push(slideRef.url);
+  }
+
   const versionId = convexRun("assets:createAssetVersion", {
     projectId,
     assetId,
     versionLabel: "v1",
     coverImageUrl: ref.url,
-    previewUrls: [ref.url],
+    previewUrls,
     status: "candidate",
     notes: "Initial seeded version for new hosted review flow.",
     createdAt: now,
