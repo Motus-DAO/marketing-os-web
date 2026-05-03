@@ -269,10 +269,27 @@ h1, h2, h3 {
 }
 
 .preview-button img,
-.mini-thumb img {
+.preview-button video,
+.mini-thumb img,
+.mini-thumb video {
   width: 100%;
   border-radius: 0.75rem;
   display: block;
+}
+
+.preview-button video,
+.mini-thumb video {
+  background: rgba(0,0,0,0.45);
+}
+
+.mini-thumb video {
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-button video {
+  max-height: 320px;
+  object-fit: contain;
 }
 
 .list-row,

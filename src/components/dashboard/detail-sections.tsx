@@ -44,8 +44,14 @@ export function AssetHeader({ asset, project, notionUrl }: { asset: any; project
   );
 }
 
-export function CarouselPreview({ version, selectedSlideIndex, onSelectSlide }: { version: any; selectedSlideIndex: number; onSelectSlide: (index: number) => void }) {
+export function CarouselPreview({ version, asset, selectedSlideIndex, onSelectSlide }: { version: any; asset?: any; selectedSlideIndex: number; onSelectSlide: (index: number) => void }) {
   const previewUrls = version?.previewUrls ?? [];
+  const videoPreviewUrls = version?.videoPreviewUrls ?? [];
+  const normalizedFormat = String(asset?.format ?? "").toLowerCase();
+  const isVideoAsset = normalizedFormat.includes("video") || normalizedFormat.includes("reel");
+  const mediaItems = isVideoAsset
+    ? videoPreviewUrls.map((url: string, index: number) => ({ url, kind: "video", label: `Video ${index + 1}` }))
+    : previewUrls.map((url: string, index: number) => ({ url, kind: "image", label: `Slide ${index + 1}` }));
 
   return (
     <section className="panel">
@@ -55,22 +61,26 @@ export function CarouselPreview({ version, selectedSlideIndex, onSelectSlide }: 
           <h2>{version?.versionLabel || "No active version"}</h2>
         </div>
       </div>
-      {previewUrls.length > 0 ? (
+      {mediaItems.length > 0 ? (
         <div className="preview-grid">
-          {previewUrls.map((url: string, index: number) => (
+          {mediaItems.map((item: any, index: number) => (
             <button
-              key={`${url}-${index}`}
+              key={`${item.url}-${index}`}
               type="button"
               className={`preview-frame preview-button ${selectedSlideIndex === index ? "is-selected" : ""}`}
               onClick={() => onSelectSlide(index)}
             >
-              <img src={url} alt={`Slide ${index + 1}`} />
-              <span>Slide {index + 1}</span>
+              {item.kind === "video" ? (
+                <video src={item.url} controls muted playsInline preload="metadata" />
+              ) : (
+                <img src={item.url} alt={item.label} />
+              )}
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
       ) : (
-        <div className="thumb-placeholder large">No preview images for this version yet.</div>
+        <div className="thumb-placeholder large">No preview media for this version yet.</div>
       )}
     </section>
   );
@@ -90,7 +100,13 @@ export function VersionList({ versions, currentVersionId, onSetCurrent, isUpdati
           {versions.map((version) => (
             <div key={version._id} className="list-row">
               <div className="mini-thumb">
-                {version.coverImageUrl ? <img src={version.coverImageUrl} alt={version.versionLabel} /> : <div className="thumb-placeholder">No thumb</div>}
+                {version.coverImageUrl ? (
+                  <img src={version.coverImageUrl} alt={version.versionLabel} />
+                ) : version.videoPreviewUrls?.[0] ? (
+                  <video src={version.videoPreviewUrls[0]} muted playsInline preload="metadata" />
+                ) : (
+                  <div className="thumb-placeholder">No thumb</div>
+                )}
               </div>
               <div className="list-row-body">
                 <strong>{version.versionLabel}</strong>

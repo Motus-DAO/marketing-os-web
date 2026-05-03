@@ -159,7 +159,7 @@ export default function AssetDetailPage() {
 
       <div className="detail-grid">
         <div className="detail-main">
-          <CarouselPreview version={data.currentVersion} selectedSlideIndex={selectedSlideIndex} onSelectSlide={setSelectedSlideIndex} />
+          <CarouselPreview asset={data.asset} version={data.currentVersion} selectedSlideIndex={selectedSlideIndex} onSelectSlide={setSelectedSlideIndex} />
 
           <section className="panel">
             <div className="section-header">
