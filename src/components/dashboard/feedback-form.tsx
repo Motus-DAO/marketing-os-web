@@ -14,6 +14,8 @@ type Props = {
   onSubmit: () => Promise<void> | void;
   disabled: boolean;
   buttonLabel: string;
+  fileLabel?: string;
+  accept?: string;
 };
 
 export function FeedbackForm({
@@ -28,6 +30,8 @@ export function FeedbackForm({
   onSubmit,
   disabled,
   buttonLabel,
+  fileLabel = "Optional reference image",
+  accept = "image/png,image/jpeg,image/webp",
 }: Props) {
   const [fileName, setFileName] = useState("");
 
@@ -49,8 +53,8 @@ export function FeedbackForm({
         <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} placeholder={placeholder} />
         <input value={referenceLabel} onChange={(event) => onReferenceLabelChange(event.target.value)} placeholder="Optional reference label" />
         <label className="upload-field">
-          <span>{fileName || "Optional reference image"}</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFile} />
+          <span>{fileName || fileLabel}</span>
+          <input type="file" accept={accept} onChange={handleFile} />
         </label>
         <button className="primary-button" disabled={disabled} type="button" onClick={onSubmit}>
           {buttonLabel}

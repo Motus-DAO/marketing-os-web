@@ -25,6 +25,10 @@ export default function AssetDetailPage() {
   const [slideReferenceLabel, setSlideReferenceLabel] = useState("");
   const [slideReferenceFile, setSlideReferenceFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const isVideoAsset = useMemo(() => {
+    const format = String(data?.asset?.format ?? "").toLowerCase();
+    return format.includes("video") || format.includes("reel");
+  }, [data?.asset?.format]);
 
   const assetComments = useMemo(
     () => (data?.feedbackComments ?? []).filter((comment: any) => comment.scopeType === "asset"),
@@ -165,7 +169,7 @@ export default function AssetDetailPage() {
             <div className="section-header">
               <div>
                 <p className="eyebrow">Feedback</p>
-                <h2>Overall carousel feedback</h2>
+                <h2>Overall {isVideoAsset ? "video" : "carousel"} feedback</h2>
               </div>
             </div>
             {assetComments.length ? (
@@ -182,14 +186,14 @@ export default function AssetDetailPage() {
                 ))}
               </div>
             ) : (
-              <div className="empty-inline">No overall carousel feedback yet.</div>
+              <div className="empty-inline">No overall {isVideoAsset ? "video" : "carousel"} feedback yet.</div>
             )}
           </section>
 
           <FeedbackForm
             title="Add overall feedback"
             eyebrow="Feedback"
-            placeholder="Add narrative, structure, CTA, tone, or strategic feedback"
+            placeholder={`Add ${isVideoAsset ? "pacing, framing, hook, CTA, or edit" : "narrative, structure, CTA, tone, or strategic"} feedback`}
             value={overallFeedback}
             onChange={setOverallFeedback}
             referenceLabel={overallReferenceLabel}
@@ -198,13 +202,15 @@ export default function AssetDetailPage() {
             onSubmit={submitOverallFeedback}
             disabled={isSaving || !overallFeedback.trim()}
             buttonLabel="Save overall feedback"
+            fileLabel={`Optional reference ${isVideoAsset ? "video or image" : "image"}`}
+            accept={isVideoAsset ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
           />
 
           <section className="panel">
             <div className="section-header">
               <div>
-                <p className="eyebrow">Slide feedback</p>
-                <h2>Slide {selectedSlideIndex + 1} feedback</h2>
+                <p className="eyebrow">{isVideoAsset ? "Clip feedback" : "Slide feedback"}</p>
+                <h2>{isVideoAsset ? `Video ${selectedSlideIndex + 1} feedback` : `Slide ${selectedSlideIndex + 1} feedback`}</h2>
               </div>
             </div>
             {slideComments.length ? (
@@ -221,14 +227,14 @@ export default function AssetDetailPage() {
                 ))}
               </div>
             ) : (
-              <div className="empty-inline">No slide-specific feedback yet.</div>
+              <div className="empty-inline">No {isVideoAsset ? "video-specific" : "slide-specific"} feedback yet.</div>
             )}
           </section>
 
           <FeedbackForm
-            title={`Comment on slide ${selectedSlideIndex + 1}`}
-            eyebrow="Slide feedback"
-            placeholder="Add precise feedback for this slide"
+            title={isVideoAsset ? `Comment on video ${selectedSlideIndex + 1}` : `Comment on slide ${selectedSlideIndex + 1}`}
+            eyebrow={isVideoAsset ? "Clip feedback" : "Slide feedback"}
+            placeholder={isVideoAsset ? "Add precise feedback for this video" : "Add precise feedback for this slide"}
             value={slideFeedback}
             onChange={setSlideFeedback}
             referenceLabel={slideReferenceLabel}
@@ -236,7 +242,9 @@ export default function AssetDetailPage() {
             onFileChange={setSlideReferenceFile}
             onSubmit={submitSlideFeedback}
             disabled={isSaving || !slideFeedback.trim()}
-            buttonLabel="Save slide feedback"
+            buttonLabel={isVideoAsset ? "Save video feedback" : "Save slide feedback"}
+            fileLabel={`Optional reference ${isVideoAsset ? "video or image" : "image"}`}
+            accept={isVideoAsset ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
           />
 
           <ReviewNoteList notes={data.notes} />
