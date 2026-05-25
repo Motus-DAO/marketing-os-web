@@ -10,8 +10,12 @@
 
 import type * as admin from "../admin.js";
 import type * as assets from "../assets.js";
+import type * as calendar from "../calendar.js";
 import type * as dashboard from "../dashboard.js";
+import type * as distribution from "../distribution.js";
+import type * as distributionValidators from "../distributionValidators.js";
 import type * as files from "../files.js";
+import type * as metrics from "../metrics.js";
 import type * as projects from "../projects.js";
 
 import type {
@@ -23,8 +27,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   assets: typeof assets;
+  calendar: typeof calendar;
   dashboard: typeof dashboard;
+  distribution: typeof distribution;
+  distributionValidators: typeof distributionValidators;
   files: typeof files;
+  metrics: typeof metrics;
   projects: typeof projects;
 }>;
 

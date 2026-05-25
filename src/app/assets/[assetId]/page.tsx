@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import { Id } from "../../../../convex/_generated/dataModel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AssetHeader, CarouselPreview, ReviewActionBar, ReviewNoteList, VersionList } from "@/components/dashboard/detail-sections";
 import { FeedbackForm } from "@/components/dashboard/feedback-form";
+import { CopyContentPanel } from "@/components/content/copy-content-panel";
+import { PublishingPacketSection } from "@/components/content/publishing-packet-section";
+import { DistributionWarnings } from "@/components/content/distribution-warnings";
+import { inferContentKind } from "@/lib/distribution-constants";
 
 export default function AssetDetailPage() {
   const params = useParams<{ assetId: string }>();
+  const router = useRouter();
   const data = useQuery(api.dashboard.getAssetDetail, params?.assetId ? { assetId: params.assetId as any } : "skip");
   const createFeedbackComment = useMutation(api.dashboard.createFeedbackComment);
   const setCurrentVersion = useMutation(api.dashboard.setCurrentVersion);
@@ -25,17 +31,29 @@ export default function AssetDetailPage() {
   const [slideReferenceLabel, setSlideReferenceLabel] = useState("");
   const [slideReferenceFile, setSlideReferenceFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const contentKind = useMemo(() => {
+    const k = data?.asset?.contentKind;
+    if (k) return k;
+    return inferContentKind(String(data?.asset?.format ?? ""));
+  }, [data?.asset?.contentKind, data?.asset?.format]);
+
+  const isCopyPrimary = contentKind === "copy";
   const isVideoAsset = useMemo(() => {
+    if (isCopyPrimary) return false;
     const format = String(data?.asset?.format ?? "").toLowerCase();
-    return format.includes("video") || format.includes("reel");
-  }, [data?.asset?.format]);
+    return contentKind === "video" || format.includes("video") || format.includes("reel");
+  }, [data?.asset?.format, contentKind, isCopyPrimary]);
 
   const assetComments = useMemo(
     () => (data?.feedbackComments ?? []).filter((comment: any) => comment.scopeType === "asset"),
     [data?.feedbackComments],
   );
   const slideComments = useMemo(
-    () => (data?.feedbackComments ?? []).filter((comment: any) => comment.scopeType === "slide" && comment.slideIndex === selectedSlideIndex),
+    () =>
+      (data?.feedbackComments ?? []).filter(
+        (comment: any) => comment.scopeType === "slide" && comment.slideIndex === selectedSlideIndex,
+      ),
     [data?.feedbackComments, selectedSlideIndex],
   );
 
@@ -143,8 +161,19 @@ export default function AssetDetailPage() {
         versionId: data.currentVersion._id,
         reviewState: state,
       });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Review state update failed");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  function handleSchedule() {
+    if (!data) return;
+    const pid = data.project?._id;
+    const aid = data.asset?._id;
+    if (pid && aid) {
+      router.push(`/calendar?project=${pid}&scheduleAsset=${aid}`);
     }
   }
 
@@ -153,108 +182,154 @@ export default function AssetDetailPage() {
       <div className="page-header-row">
         <div>
           <Link href={data.project?._id ? `/projects/${data.project._id}` : "/"} className="text-link">
-            ← Back to asset list
+            ← Back to content list
           </Link>
-          <p className="eyebrow">Asset Detail</p>
+          <p className="eyebrow">Content Review</p>
         </div>
+        {data.asset.approvalState === "approved" ? (
+          <button type="button" className="primary-button" onClick={handleSchedule}>
+            Schedule on calendar
+          </button>
+        ) : null}
       </div>
+
+      <DistributionWarnings
+        meta={{
+          distributionType: data.asset.distributionType,
+          cta: data.asset.cta,
+          destination: data.asset.destination,
+          primaryMetric: data.asset.primaryMetric,
+          funnelStage: data.asset.funnelStage,
+          status: data.asset.approvalState === "approved" ? "approved" : undefined,
+        }}
+      />
 
       <AssetHeader asset={data.asset} project={data.project} notionUrl={data.asset.notionPageUrl || data.primaryReference?.location || null} />
 
-      <div className="detail-grid">
-        <div className="detail-main">
-          <CarouselPreview asset={data.asset} version={data.currentVersion} selectedSlideIndex={selectedSlideIndex} onSelectSlide={setSelectedSlideIndex} />
+      <CopyContentPanel asset={data.asset} />
+      <PublishingPacketSection asset={data.asset} />
 
-          <section className="panel">
-            <div className="section-header">
-              <div>
-                <p className="eyebrow">Feedback</p>
-                <h2>Overall {isVideoAsset ? "video" : "carousel"} feedback</h2>
+      {isCopyPrimary ? null : (
+        <div className="detail-grid">
+          <div className="detail-main">
+            <CarouselPreview
+              asset={data.asset}
+              version={data.currentVersion}
+              selectedSlideIndex={selectedSlideIndex}
+              onSelectSlide={setSelectedSlideIndex}
+            />
+
+            <section className="panel">
+              <div className="section-header">
+                <div>
+                  <p className="eyebrow">Feedback</p>
+                  <h2>Overall {isVideoAsset ? "video" : "carousel"} feedback</h2>
+                </div>
               </div>
-            </div>
-            {assetComments.length ? (
-              <div className="stack-list">
-                {assetComments.map((comment: any) => (
-                  <div key={comment._id} className="note-card">
-                    <div className="card-header">
-                      <strong>{comment.authorId || comment.authorType || "Reviewer"}</strong>
-                      <span className="muted">{comment.status}</span>
+              {assetComments.length ? (
+                <div className="stack-list">
+                  {assetComments.map((comment: any) => (
+                    <div key={comment._id} className="note-card">
+                      <div className="card-header">
+                        <strong>{comment.authorId || comment.authorType || "Reviewer"}</strong>
+                        <span className="muted">{comment.status}</span>
+                      </div>
+                      <p>{comment.body}</p>
+                      {comment.referenceImageUrl ? (
+                        <img
+                          className="feedback-reference-image"
+                          src={comment.referenceImageUrl}
+                          alt={comment.referenceLabel || "Reference"}
+                        />
+                      ) : null}
                     </div>
-                    <p>{comment.body}</p>
-                    {comment.referenceImageUrl ? <img className="feedback-reference-image" src={comment.referenceImageUrl} alt={comment.referenceLabel || "Reference"} /> : null}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-inline">No overall {isVideoAsset ? "video" : "carousel"} feedback yet.</div>
-            )}
-          </section>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-inline">No overall feedback yet.</div>
+              )}
+            </section>
 
-          <FeedbackForm
-            title="Add overall feedback"
-            eyebrow="Feedback"
-            placeholder={`Add ${isVideoAsset ? "pacing, framing, hook, CTA, or edit" : "narrative, structure, CTA, tone, or strategic"} feedback`}
-            value={overallFeedback}
-            onChange={setOverallFeedback}
-            referenceLabel={overallReferenceLabel}
-            onReferenceLabelChange={setOverallReferenceLabel}
-            onFileChange={setOverallReferenceFile}
-            onSubmit={submitOverallFeedback}
-            disabled={isSaving || !overallFeedback.trim()}
-            buttonLabel="Save overall feedback"
-            fileLabel={`Optional reference ${isVideoAsset ? "video or image" : "image"}`}
-            accept={isVideoAsset ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
-          />
+            <FeedbackForm
+              title="Add overall feedback"
+              eyebrow="Feedback"
+              placeholder={`Add ${isVideoAsset ? "pacing, framing, hook, CTA" : "narrative, structure, CTA"} feedback`}
+              value={overallFeedback}
+              onChange={setOverallFeedback}
+              referenceLabel={overallReferenceLabel}
+              onReferenceLabelChange={setOverallReferenceLabel}
+              onFileChange={setOverallReferenceFile}
+              onSubmit={submitOverallFeedback}
+              disabled={isSaving || !overallFeedback.trim()}
+              buttonLabel="Save overall feedback"
+              fileLabel={`Optional reference ${isVideoAsset ? "video or image" : "image"}`}
+              accept={
+                isVideoAsset
+                  ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+                  : "image/png,image/jpeg,image/webp"
+              }
+            />
 
-          <section className="panel">
-            <div className="section-header">
-              <div>
-                <p className="eyebrow">{isVideoAsset ? "Clip feedback" : "Slide feedback"}</p>
-                <h2>{isVideoAsset ? `Video ${selectedSlideIndex + 1} feedback` : `Slide ${selectedSlideIndex + 1} feedback`}</h2>
-              </div>
-            </div>
-            {slideComments.length ? (
-              <div className="stack-list">
-                {slideComments.map((comment: any) => (
-                  <div key={comment._id} className="note-card">
-                    <div className="card-header">
-                      <strong>{comment.authorId || comment.authorType || "Reviewer"}</strong>
-                      <span className="muted">{comment.status}</span>
+            {!isVideoAsset ? (
+              <>
+                <section className="panel">
+                  <div className="section-header">
+                    <div>
+                      <p className="eyebrow">Slide feedback</p>
+                      <h2>{`Slide ${selectedSlideIndex + 1} feedback`}</h2>
                     </div>
-                    <p>{comment.body}</p>
-                    {comment.referenceImageUrl ? <img className="feedback-reference-image" src={comment.referenceImageUrl} alt={comment.referenceLabel || "Reference"} /> : null}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-inline">No {isVideoAsset ? "video-specific" : "slide-specific"} feedback yet.</div>
-            )}
-          </section>
+                  {slideComments.length ? (
+                    <div className="stack-list">
+                      {slideComments.map((comment: any) => (
+                        <div key={comment._id} className="note-card">
+                          <p>{comment.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty-inline">No slide-specific feedback yet.</div>
+                  )}
+                </section>
+                <FeedbackForm
+                  title={`Comment on slide ${selectedSlideIndex + 1}`}
+                  eyebrow="Slide feedback"
+                  placeholder="Add precise feedback for this slide"
+                  value={slideFeedback}
+                  onChange={setSlideFeedback}
+                  referenceLabel={slideReferenceLabel}
+                  onReferenceLabelChange={setSlideReferenceLabel}
+                  onFileChange={setSlideReferenceFile}
+                  onSubmit={submitSlideFeedback}
+                  disabled={isSaving || !slideFeedback.trim()}
+                  buttonLabel="Save slide feedback"
+                  fileLabel="Optional reference image"
+                  accept="image/png,image/jpeg,image/webp"
+                />
+              </>
+            ) : null}
 
-          <FeedbackForm
-            title={isVideoAsset ? `Comment on video ${selectedSlideIndex + 1}` : `Comment on slide ${selectedSlideIndex + 1}`}
-            eyebrow={isVideoAsset ? "Clip feedback" : "Slide feedback"}
-            placeholder={isVideoAsset ? "Add precise feedback for this video" : "Add precise feedback for this slide"}
-            value={slideFeedback}
-            onChange={setSlideFeedback}
-            referenceLabel={slideReferenceLabel}
-            onReferenceLabelChange={setSlideReferenceLabel}
-            onFileChange={setSlideReferenceFile}
-            onSubmit={submitSlideFeedback}
-            disabled={isSaving || !slideFeedback.trim()}
-            buttonLabel={isVideoAsset ? "Save video feedback" : "Save slide feedback"}
-            fileLabel={`Optional reference ${isVideoAsset ? "video or image" : "image"}`}
-            accept={isVideoAsset ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
-          />
+            <ReviewNoteList notes={data.notes} />
+          </div>
 
+          <div className="detail-side">
+            <VersionList
+              versions={data.versions}
+              currentVersionId={data.asset.currentVersionId}
+              onSetCurrent={handleSetCurrent}
+              isUpdating={isSaving}
+            />
+            <ReviewActionBar currentState={data.asset.approvalState} isUpdating={isSaving} onSetState={handleReviewState} />
+          </div>
+        </div>
+      )}
+
+      {isCopyPrimary ? (
+        <div className="detail-side-narrow">
+          <ReviewActionBar currentState={data.asset.approvalState} isUpdating={isSaving} onSetState={handleReviewState} />
           <ReviewNoteList notes={data.notes} />
         </div>
-
-        <div className="detail-side">
-          <VersionList versions={data.versions} currentVersionId={data.asset.currentVersionId} onSetCurrent={handleSetCurrent} isUpdating={isSaving} />
-          <ReviewActionBar currentState={data.asset.approvalState} isUpdating={isSaving} onSetState={handleReviewState} />
-        </div>
-      </div>
+      ) : null}
     </section>
   );
 }

@@ -66,6 +66,21 @@ export default defineSchema({
     primaryReferenceId: v.optional(v.id('references')),
     currentVersionId: v.optional(v.id('assetVersions')),
     notionPageUrl: v.optional(v.string()),
+    distributionType: v.optional(v.union(v.literal('organic'), v.literal('paid'), v.literal('both'))),
+    destination: v.optional(v.string()),
+    primaryMetric: v.optional(v.string()),
+    hook: v.optional(v.string()),
+    centralIdea: v.optional(v.string()),
+    copy: v.optional(v.string()),
+    contentKind: v.optional(
+      v.union(v.literal('video'), v.literal('carousel'), v.literal('image'), v.literal('copy'), v.literal('mixed'))
+    ),
+    publishUrl: v.optional(v.string()),
+    notionPacketUrl: v.optional(v.string()),
+    brief: v.optional(v.string()),
+    script: v.optional(v.string()),
+    caption: v.optional(v.string()),
+    adConcept: v.optional(v.string()),
     approvalState: v.optional(v.union(v.literal('pending'), v.literal('in_review'), v.literal('approved'), v.literal('rejected'), v.literal('needs_changes'))),
     createdAt: v.string(),
     updatedAt: v.string(),
@@ -82,6 +97,8 @@ export default defineSchema({
     versionLabel: v.string(),
     coverImageUrl: v.optional(v.string()),
     previewUrls: v.optional(v.array(v.string())),
+    videoPreviewUrls: v.optional(v.array(v.string())),
+    mediaType: v.optional(v.union(v.literal('image'), v.literal('video'))),
     status: v.union(v.literal('candidate'), v.literal('in_review'), v.literal('approved'), v.literal('rejected'), v.literal('needs_changes')),
     notes: v.optional(v.string()),
     createdAt: v.string(),
@@ -254,4 +271,66 @@ export default defineSchema({
     .index('by_metric_name', ['metricName'])
     .index('by_related_asset', ['relatedAssetId'])
     .index('by_related_campaign', ['relatedCampaignId']),
+
+  calendarItems: defineTable({
+    projectId: v.optional(v.id('projects')),
+    title: v.string(),
+    platform: v.union(
+      v.literal('instagram'),
+      v.literal('tiktok'),
+      v.literal('linkedin'),
+      v.literal('x_twitter'),
+      v.literal('youtube_shorts'),
+      v.literal('youtube_long'),
+      v.literal('newsletter'),
+      v.literal('whatsapp'),
+      v.literal('telegram'),
+      v.literal('blog'),
+      v.literal('forum'),
+      v.literal('landing_page'),
+      v.literal('meta_ads'),
+      v.literal('google_ads'),
+      v.literal('youtube_ads'),
+      v.literal('tiktok_ads'),
+      v.literal('linkedin_ads')
+    ),
+    format: v.string(),
+    scheduledAt: v.string(),
+    status: v.union(
+      v.literal('idea'),
+      v.literal('brief'),
+      v.literal('in_production'),
+      v.literal('needs_review'),
+      v.literal('approved'),
+      v.literal('scheduled'),
+      v.literal('published'),
+      v.literal('measured')
+    ),
+    distributionType: v.union(v.literal('organic'), v.literal('paid'), v.literal('both')),
+    cta: v.optional(v.string()),
+    assetStatus: v.union(
+      v.literal('missing'),
+      v.literal('in_progress'),
+      v.literal('ready'),
+      v.literal('needs_review')
+    ),
+    copy: v.optional(v.string()),
+    assetUrl: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    destination: v.optional(v.string()),
+    relatedAssetId: v.optional(v.id('assets')),
+    campaignId: v.optional(v.string()),
+    funnelStage: v.optional(v.string()),
+    primaryMetric: v.optional(v.string()),
+    hook: v.optional(v.string()),
+    centralIdea: v.optional(v.string()),
+    publishUrl: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+  })
+    .index('by_scheduled_at', ['scheduledAt'])
+    .index('by_project', ['projectId'])
+    .index('by_project_scheduled', ['projectId', 'scheduledAt'])
+    .index('by_platform', ['platform'])
+    .index('by_status', ['status']),
 });

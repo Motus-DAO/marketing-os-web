@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { labelForFunnel, labelForMetric } from "@/lib/distribution-constants";
 
 function titleCase(value?: string | null) {
   if (!value) return "Unknown";
@@ -32,8 +33,12 @@ export function AssetHeader({ asset, project, notionUrl }: { asset: any; project
       <div className="meta-grid dense muted">
         <span>Platform: {titleCase(asset.platform)}</span>
         <span>Format: {titleCase(asset.format)}</span>
-        <span>Funnel: {titleCase(asset.funnelStage)}</span>
+        <span>Funnel: {labelForFunnel(asset.funnelStage) || titleCase(asset.funnelStage)}</span>
         <span>Status: {titleCase(asset.status)}</span>
+        {asset.distributionType ? <span>Distribution: {titleCase(asset.distributionType)}</span> : null}
+        {asset.primaryMetric ? <span>Metric: {labelForMetric(asset.primaryMetric)}</span> : null}
+        {asset.destination ? <span>Destination: {asset.destination}</span> : null}
+        {asset.cta ? <span>CTA: {asset.cta}</span> : null}
       </div>
       {notionUrl ? (
         <Link href={notionUrl} target="_blank" rel="noreferrer" className="text-link">

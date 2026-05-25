@@ -1,6 +1,13 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { Doc } from './_generated/dataModel';
+import {
+  assertDistributionReady,
+  contentKindValidator,
+  distributionTypeValidator,
+  funnelStageValidator,
+  primaryMetricValidator,
+} from './distributionValidators';
 
 const approvalStateValidator = v.union(
   v.literal('pending'),
@@ -205,6 +212,22 @@ export const updateFeedbackCommentStatus = mutation({
   },
 });
 
+const assetDistributionArgs = {
+  distributionType: v.optional(distributionTypeValidator),
+  destination: v.optional(v.string()),
+  primaryMetric: v.optional(primaryMetricValidator),
+  hook: v.optional(v.string()),
+  centralIdea: v.optional(v.string()),
+  copy: v.optional(v.string()),
+  contentKind: v.optional(contentKindValidator),
+  publishUrl: v.optional(v.string()),
+  notionPacketUrl: v.optional(v.string()),
+  brief: v.optional(v.string()),
+  script: v.optional(v.string()),
+  caption: v.optional(v.string()),
+  adConcept: v.optional(v.string()),
+};
+
 export const createAsset = mutation({
   args: {
     projectId: v.id('projects'),
@@ -222,6 +245,7 @@ export const createAsset = mutation({
     cta: v.optional(v.string()),
     campaignId: v.optional(v.string()),
     primaryReferenceId: v.optional(v.id('references')),
+    ...assetDistributionArgs,
   },
   handler: async (ctx, args) => {
     const project = await ctx.db.get(args.projectId);
@@ -246,9 +270,64 @@ export const createAsset = mutation({
       cta: args.cta,
       campaignId: args.campaignId,
       primaryReferenceId: args.primaryReferenceId,
+      distributionType: args.distributionType,
+      destination: args.destination,
+      primaryMetric: args.primaryMetric,
+      hook: args.hook,
+      centralIdea: args.centralIdea,
+      copy: args.copy,
+      contentKind: args.contentKind,
+      publishUrl: args.publishUrl,
+      notionPacketUrl: args.notionPacketUrl,
+      brief: args.brief,
+      script: args.script,
+      caption: args.caption,
+      adConcept: args.adConcept,
       createdAt: now,
       updatedAt: now,
     });
+  },
+});
+
+export const updateAsset = mutation({
+  args: {
+    assetId: v.id('assets'),
+    title: v.optional(v.string()),
+    platform: v.optional(v.string()),
+    format: v.optional(v.string()),
+    funnelStage: v.optional(v.string()),
+    status: v.optional(v.string()),
+    approvalState: v.optional(approvalStateValidator),
+    notionPageUrl: v.optional(v.string()),
+    objective: v.optional(v.string()),
+    audienceSummary: v.optional(v.string()),
+    cta: v.optional(v.string()),
+    campaignId: v.optional(v.string()),
+    ...assetDistributionArgs,
+  },
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset) throw new Error('Asset not found');
+
+    const { assetId, ...patch } = args;
+    const merged = { ...asset, ...patch };
+    if (patch.approvalState === 'approved') {
+      assertDistributionReady(
+        {
+          cta: merged.cta,
+          destination: merged.destination,
+          primaryMetric: merged.primaryMetric,
+          funnelStage: merged.funnelStage,
+        },
+        'asset_approval'
+      );
+    }
+
+    await ctx.db.patch(assetId, {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    });
+    return assetId;
   },
 });
 
@@ -321,6 +400,18 @@ export const setAssetVersionReviewState = mutation({
       throw new Error('Version not found for asset');
     }
 
+    if (args.reviewState === 'approved') {
+      assertDistributionReady(
+        {
+          cta: asset.cta,
+          destination: asset.destination,
+          primaryMetric: asset.primaryMetric,
+          funnelStage: asset.funnelStage,
+        },
+        'asset_approval'
+      );
+    }
+
     const now = new Date().toISOString();
     await ctx.db.patch(args.versionId, {
       status: args.reviewState,
@@ -347,11 +438,24 @@ export const setAssetApprovalState = mutation({
     assetId: v.id('assets'),
     approvalState: approvalStateValidator,
     versionId: v.optional(v.id('assetVersions')),
+    skipDistributionCheck: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const asset = await ctx.db.get(args.assetId);
     if (!asset) {
       throw new Error('Asset not found');
+    }
+
+    if (args.approvalState === 'approved' && !args.skipDistributionCheck) {
+      assertDistributionReady(
+        {
+          cta: asset.cta,
+          destination: asset.destination,
+          primaryMetric: asset.primaryMetric,
+          funnelStage: asset.funnelStage,
+        },
+        'asset_approval'
+      );
     }
 
     if (args.versionId) {
