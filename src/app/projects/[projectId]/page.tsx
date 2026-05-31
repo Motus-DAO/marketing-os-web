@@ -2,32 +2,20 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
-import { AssetCard } from "@/components/dashboard/asset-card";
-import { AssetForm } from "@/components/content/asset-form";
+import { ChannelCard } from "@/components/dashboard/channel-card";
 import { EmptyState } from "@/components/ui/empty-state";
 
-export default function ProjectAssetsPage() {
+export default function ProjectChannelsPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params?.projectId as Id<"projects"> | undefined;
-  const data = useQuery(api.dashboard.listAssetsByProject, projectId ? { projectId } : "skip");
+  const data = useQuery(api.dashboard.getProjectChannelSummary, projectId ? { projectId } : "skip");
   const metrics = useQuery(api.distribution.listProjectMetricSummary, projectId ? { projectId } : "skip");
-  const [showForm, setShowForm] = useState(false);
-  const [filter, setFilter] = useState<"all" | "ready">("all");
-
-  const assets = useMemo(() => {
-    const list = data?.assets ?? [];
-    if (filter === "ready") {
-      return list.filter((a: any) => a.approvalState === "approved");
-    }
-    return list;
-  }, [data?.assets, filter]);
 
   if (data === undefined) {
-    return <div className="loading-state">Loading assets…</div>;
+    return <div className="loading-state">Loading channels…</div>;
   }
 
   if (!data) {
@@ -41,17 +29,17 @@ export default function ProjectAssetsPage() {
           <Link href="/" className="text-link">
             ← Back to projects
           </Link>
-          <p className="eyebrow">Content</p>
+          <p className="eyebrow">Channels</p>
           <h1>{data.project.name}</h1>
-          <p className="muted">Review and plan distribution for all content pieces in this project.</p>
+          <p className="muted">
+            Pick a channel to review and plan content for this campaign. {data.totalAssets} total pieces across{" "}
+            {data.channels.length} channels.
+          </p>
         </div>
         <div className="header-actions-stack">
           <Link href={`/calendar?project=${projectId}`} className="secondary-button">
             Open calendar
           </Link>
-          <button type="button" className="primary-button" onClick={() => setShowForm(!showForm)}>
-            {showForm ? "Close form" : "Add content"}
-          </button>
         </div>
       </div>
 
@@ -67,30 +55,16 @@ export default function ProjectAssetsPage() {
         </div>
       ) : null}
 
-      <div className="calendar-filters panel">
-        <div className="filter-group">
-          <label htmlFor="asset-filter">Filter</label>
-          <select id="asset-filter" value={filter} onChange={(e) => setFilter(e.target.value as "all" | "ready")}>
-            <option value="all">All content</option>
-            <option value="ready">Ready to publish (approved)</option>
-          </select>
-        </div>
-      </div>
-
-      {showForm && projectId ? (
-        <AssetForm projectId={projectId} onCreated={() => setShowForm(false)} onCancel={() => setShowForm(false)} />
-      ) : null}
-
-      {assets.length ? (
-        <div className="asset-grid">
-          {assets.map((asset) => (
-            <AssetCard key={asset._id} asset={asset} />
+      {data.channels.length ? (
+        <div className="project-grid">
+          {data.channels.map((channel) => (
+            <ChannelCard key={channel.id} projectId={projectId!} channel={channel} />
           ))}
         </div>
       ) : (
         <EmptyState
-          title="No matching content"
-          body="Add a content piece or adjust the filter. Video, carousel, and copy-only assets are supported."
+          title="No channels configured"
+          body="Add activeChannels to this project in Convex, or create content to derive channels automatically."
         />
       )}
     </section>

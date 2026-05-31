@@ -96,10 +96,10 @@ export function CalendarMonthView({
           const isSelected = cell.key === selectedDayKey;
 
           return (
-            <button
+            <div
               key={cell.key}
-              type="button"
               role="gridcell"
+              tabIndex={0}
               className={[
                 "calendar-month-cell",
                 isToday ? "is-today" : "",
@@ -109,7 +109,13 @@ export function CalendarMonthView({
                 .filter(Boolean)
                 .join(" ")}
               onClick={() => onSelectDay(isSelected ? null : cell.key)}
-              aria-pressed={isSelected}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectDay(isSelected ? null : cell.key);
+                }
+              }}
+              aria-selected={isSelected}
               aria-label={`${cell.day}, ${dayItems.length} item${dayItems.length === 1 ? "" : "s"}`}
             >
               <span className="calendar-month-day-num">{cell.day}</span>
@@ -136,7 +142,7 @@ export function CalendarMonthView({
                   ) : null}
                 </ul>
               ) : null}
-            </button>
+            </div>
           );
         })}
       </div>

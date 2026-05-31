@@ -146,6 +146,32 @@ body::before {
   gap: 1rem;
 }
 
+.platform-sections {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.platform-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.platform-section-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.platform-section-empty {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
@@ -479,6 +505,7 @@ h1, h2, h3 {
   background: rgba(255, 255, 255, 0.02);
   color: inherit;
   text-align: left;
+  cursor: pointer;
 }
 
 .calendar-month-cell.is-empty {
@@ -486,6 +513,7 @@ h1, h2, h3 {
   background: transparent;
   pointer-events: none;
   min-height: 0;
+  cursor: default;
 }
 
 .calendar-month-cell.is-today .calendar-month-day-num {

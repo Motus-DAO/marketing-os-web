@@ -16,18 +16,21 @@ import {
 
 type AssetFormProps = {
   projectId: Id<"projects">;
+  defaultPlatform?: string;
+  lockPlatform?: boolean;
   onCreated?: (assetId: Id<"assets">) => void;
   onCancel?: () => void;
 };
 
-export function AssetForm({ projectId, onCreated, onCancel }: AssetFormProps) {
+export function AssetForm({ projectId, defaultPlatform, lockPlatform, onCreated, onCancel }: AssetFormProps) {
   const createAsset = useMutation(api.dashboard.createAsset);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const initialPlatform = defaultPlatform ?? "instagram";
   const [title, setTitle] = useState("");
-  const [platform, setPlatform] = useState("instagram");
-  const [format, setFormat] = useState("reel");
+  const [platform, setPlatform] = useState(initialPlatform);
+  const [format, setFormat] = useState(() => formatsForPlatform(initialPlatform)[0]?.id ?? "reel");
   const [contentKind, setContentKind] = useState<string>("video");
   const [distributionType, setDistributionType] = useState("organic");
   const [funnelStage, setFunnelStage] = useState("bridge");
@@ -94,6 +97,7 @@ export function AssetForm({ projectId, onCreated, onCancel }: AssetFormProps) {
           Platform
           <select
             value={platform}
+            disabled={lockPlatform}
             onChange={(e) => {
               setPlatform(e.target.value);
               const fmts = formatsForPlatform(e.target.value);

@@ -62,7 +62,7 @@ export const listProjects = query({
   },
 });
 
-export const listAssetsByProject = query({
+export const getProjectChannelSummary = query({
   args: {
     projectId: v.id('projects'),
   },
@@ -75,8 +75,69 @@ export const listAssetsByProject = query({
     const assets = await ctx.db
       .query('assets')
       .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
-      .order('desc')
-      .take(200);
+      .take(500);
+
+    const counts = new Map<string, { assetCount: number; needsReviewCount: number }>();
+    for (const asset of assets) {
+      const entry = counts.get(asset.platform) ?? { assetCount: 0, needsReviewCount: 0 };
+      entry.assetCount += 1;
+      if (asset.status !== 'done') {
+        entry.needsReviewCount += 1;
+      }
+      counts.set(asset.platform, entry);
+    }
+
+    const platformIds = new Set<string>(project.activeChannels ?? []);
+    for (const asset of assets) {
+      platformIds.add(asset.platform);
+    }
+
+    const activeOrder = project.activeChannels ?? [];
+    const channels = [...platformIds].sort((a, b) => {
+      const ai = activeOrder.indexOf(a);
+      const bi = activeOrder.indexOf(b);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return a.localeCompare(b);
+    });
+
+    return {
+      project,
+      channels: channels.map((id) => ({
+        id,
+        assetCount: counts.get(id)?.assetCount ?? 0,
+        needsReviewCount: counts.get(id)?.needsReviewCount ?? 0,
+      })),
+      totalAssets: assets.length,
+    };
+  },
+});
+
+export const listAssetsByProject = query({
+  args: {
+    projectId: v.id('projects'),
+    platform: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.projectId);
+    if (!project) {
+      return null;
+    }
+
+    const assets = args.platform
+      ? await ctx.db
+          .query('assets')
+          .withIndex('by_project_platform', (q) =>
+            q.eq('projectId', args.projectId).eq('platform', args.platform!)
+          )
+          .order('desc')
+          .take(200)
+      : await ctx.db
+          .query('assets')
+          .withIndex('by_project', (q) => q.eq('projectId', args.projectId))
+          .order('desc')
+          .take(200);
 
     const items = await Promise.all(
       assets.map(async (asset) => {

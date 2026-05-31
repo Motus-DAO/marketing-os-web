@@ -7,7 +7,8 @@ import { ReactNode } from "react";
 function sectionLabel(pathname: string) {
   if (pathname === "/") return "Project Home";
   if (pathname.startsWith("/calendar")) return "Content Calendar";
-  if (pathname.startsWith("/projects")) return "Asset List";
+  if (/^\/projects\/[^/]+\/[^/]+/.test(pathname)) return "Channel Content";
+  if (pathname.startsWith("/projects")) return "Channels";
   if (pathname.startsWith("/assets")) return "Content Review";
   return "Marketing OS";
 }

@@ -181,8 +181,17 @@ export default function AssetDetailPage() {
     <section className="page-stack">
       <div className="page-header-row">
         <div>
-          <Link href={data.project?._id ? `/projects/${data.project._id}` : "/"} className="text-link">
-            ← Back to content list
+          <Link
+            href={
+              data.project?._id && data.asset?.platform
+                ? `/projects/${data.project._id}/${data.asset.platform}`
+                : data.project?._id
+                  ? `/projects/${data.project._id}`
+                  : "/"
+            }
+            className="text-link"
+          >
+            ← Back to channel content
           </Link>
           <p className="eyebrow">Content Review</p>
         </div>

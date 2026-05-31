@@ -8,6 +8,9 @@
 # production
 /build
 
+# convex migration exports (large, local only)
+/snapshots/
+
 # misc
 .DS_Store
 *.pem
