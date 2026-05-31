@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx convex codegen && next build",
+    "build": "next build",
+    "codegen": "npx convex codegen",
     "convex:deploy:prod": "CONVEX_DEPLOYMENT=prod:savory-hippopotamus-103 npx convex deploy",
     "convex:migrate:dev-to-prod": "bash scripts/migrate-dev-to-prod.sh",
     "start": "next start",

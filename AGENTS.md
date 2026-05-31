@@ -10,7 +10,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Scheduling:** `calendarItems` linked via `relatedAssetId`; use `syncFromAsset` after edits.
 - **Masterclass project:** `npx convex run distribution:seedMasterclassProject`
 - **Convex production:** `npm run convex:deploy:prod` → `savory-hippopotamus-103`
-- **Vercel env:** `NEXT_PUBLIC_CONVEX_URL` / `NEXT_PUBLIC_CONVEX_SITE_URL` must match production URLs in `.env.example`
+- **Vercel env:** `NEXT_PUBLIC_CONVEX_URL` / `NEXT_PUBLIC_CONVEX_SITE_URL` must match production URLs in `.env.example` (no `CONVEX_DEPLOY_KEY` needed for default `npm run build`)
+- **After `convex/` schema changes:** run `npm run codegen` locally and commit `convex/_generated/`
 - **Dev → prod data (append, no deletes):** `npm run convex:migrate:dev-to-prod` exports `accomplished-dragon-257` and appends into `savory-hippopotamus-103`
 - **Week 1 parrilla:** Calendar UI → “Seed week 1 parrilla” (requires masterclass project).
 - **OpenClaw import:** `node scripts/register-content-asset.mjs payload.json`
