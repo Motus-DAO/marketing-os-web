@@ -226,6 +226,7 @@ export default function AssetDetailPage() {
               version={data.currentVersion}
               selectedSlideIndex={selectedSlideIndex}
               onSelectSlide={setSelectedSlideIndex}
+              isVideoAsset={isVideoAsset}
             />
 
             <section className="panel">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DownloadAllAssetsButton } from "@/components/dashboard/download-all-assets-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { labelForFunnel, labelForMetric } from "@/lib/distribution-constants";
 
@@ -49,11 +50,24 @@ export function AssetHeader({ asset, project, notionUrl }: { asset: any; project
   );
 }
 
-export function CarouselPreview({ version, asset, selectedSlideIndex, onSelectSlide }: { version: any; asset?: any; selectedSlideIndex: number; onSelectSlide: (index: number) => void }) {
+export function CarouselPreview({
+  version,
+  asset,
+  selectedSlideIndex,
+  onSelectSlide,
+  isVideoAsset: isVideoAssetProp,
+}: {
+  version: any;
+  asset?: any;
+  selectedSlideIndex: number;
+  onSelectSlide: (index: number) => void;
+  isVideoAsset?: boolean;
+}) {
   const previewUrls = version?.previewUrls ?? [];
   const videoPreviewUrls = version?.videoPreviewUrls ?? [];
   const normalizedFormat = String(asset?.format ?? "").toLowerCase();
-  const isVideoAsset = normalizedFormat.includes("video") || normalizedFormat.includes("reel");
+  const isVideoAsset =
+    isVideoAssetProp ?? (normalizedFormat.includes("video") || normalizedFormat.includes("reel"));
   const mediaItems = isVideoAsset
     ? videoPreviewUrls.map((url: string, index: number) => ({ url, kind: "video", label: `Video ${index + 1}` }))
     : previewUrls.map((url: string, index: number) => ({ url, kind: "image", label: `Slide ${index + 1}` }));
@@ -65,6 +79,9 @@ export function CarouselPreview({ version, asset, selectedSlideIndex, onSelectSl
           <p className="eyebrow">Preview</p>
           <h2>{version?.versionLabel || "No active version"}</h2>
         </div>
+        {asset?.title ? (
+          <DownloadAllAssetsButton assetTitle={asset.title} version={version} isVideoAsset={isVideoAsset} />
+        ) : null}
       </div>
       {mediaItems.length > 0 ? (
         <div className="preview-grid">
