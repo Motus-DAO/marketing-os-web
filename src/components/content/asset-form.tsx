@@ -41,6 +41,10 @@ export function AssetForm({ projectId, defaultPlatform, lockPlatform, onCreated,
   const [centralIdea, setCentralIdea] = useState("");
   const [copy, setCopy] = useState("");
   const [objective, setObjective] = useState("");
+  const [workflowStage, setWorkflowStage] = useState("planning");
+  const [productionMethod, setProductionMethod] = useState("");
+  const [durationTarget, setDurationTarget] = useState("");
+  const [visualDirection, setVisualDirection] = useState("");
 
   const formatOptions = useMemo(() => formatsForPlatform(platform), [platform]);
 
@@ -57,6 +61,7 @@ export function AssetForm({ projectId, defaultPlatform, lockPlatform, onCreated,
         format,
         funnelStage,
         status: "draft",
+        workflowStage: workflowStage as any,
         approvalState: "pending",
         distributionType: distributionType as "organic" | "paid" | "both",
         primaryMetric: primaryMetric as any,
@@ -66,6 +71,9 @@ export function AssetForm({ projectId, defaultPlatform, lockPlatform, onCreated,
         centralIdea: centralIdea.trim() || undefined,
         copy: copy.trim() || undefined,
         contentKind: kind,
+        productionMethod: productionMethod.trim() || undefined,
+        durationTarget: durationTarget.trim() || undefined,
+        visualDirection: visualDirection.trim() || undefined,
         objective: objective.trim() || undefined,
       });
       onCreated?.(assetId);
@@ -169,6 +177,35 @@ export function AssetForm({ projectId, defaultPlatform, lockPlatform, onCreated,
         </label>
       </div>
 
+      <div className="form-row">
+        <label>
+          Workflow stage
+          <select value={workflowStage} onChange={(e) => setWorkflowStage(e.target.value)}>
+            <option value="planning">Planning</option>
+            <option value="preproduction">Preproduction</option>
+            <option value="production">Production</option>
+            <option value="postproduction">Postproduction</option>
+            <option value="review">Review</option>
+            <option value="approved">Approved</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="published">Published</option>
+            <option value="measured">Measured</option>
+            <option value="archived">Archived</option>
+          </select>
+        </label>
+        <label>
+          Duration target
+          <input value={durationTarget} onChange={(e) => setDurationTarget(e.target.value)} placeholder="30 seconds / 7 slides / 5 stories" />
+        </label>
+      </div>
+      <label>
+        Production method
+        <input value={productionMethod} onChange={(e) => setProductionMethod(e.target.value)} placeholder="talking_head / ai_avatar / carousel_design / story_set" />
+      </label>
+      <label>
+        Visual direction
+        <input value={visualDirection} onChange={(e) => setVisualDirection(e.target.value)} placeholder="dark editorial clinical / minimal structured / glass-card" />
+      </label>
       <label>
         CTA
         <input value={cta} onChange={(e) => setCta(e.target.value)} />

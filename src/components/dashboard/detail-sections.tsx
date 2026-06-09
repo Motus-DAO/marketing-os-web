@@ -36,11 +36,15 @@ export function AssetHeader({ asset, project, notionUrl }: { asset: any; project
         <span>Format: {titleCase(asset.format)}</span>
         <span>Funnel: {labelForFunnel(asset.funnelStage) || titleCase(asset.funnelStage)}</span>
         <span>Status: {titleCase(asset.status)}</span>
+        {asset.workflowStage ? <span>Workflow: {titleCase(asset.workflowStage)}</span> : null}
+        {asset.productionMethod ? <span>Method: {titleCase(asset.productionMethod)}</span> : null}
+        {asset.durationTarget ? <span>Duration: {asset.durationTarget}</span> : null}
         {asset.distributionType ? <span>Distribution: {titleCase(asset.distributionType)}</span> : null}
         {asset.primaryMetric ? <span>Metric: {labelForMetric(asset.primaryMetric)}</span> : null}
         {asset.destination ? <span>Destination: {asset.destination}</span> : null}
         {asset.cta ? <span>CTA: {asset.cta}</span> : null}
       </div>
+      {asset.visualDirection ? <p className="muted">Visual direction: {asset.visualDirection}</p> : null}
       {notionUrl ? (
         <Link href={notionUrl} target="_blank" rel="noreferrer" className="text-link">
           Open source reference

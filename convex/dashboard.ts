@@ -273,6 +273,19 @@ export const updateFeedbackCommentStatus = mutation({
   },
 });
 
+const workflowStageValidator = v.union(
+  v.literal('planning'),
+  v.literal('preproduction'),
+  v.literal('production'),
+  v.literal('postproduction'),
+  v.literal('review'),
+  v.literal('approved'),
+  v.literal('scheduled'),
+  v.literal('published'),
+  v.literal('measured'),
+  v.literal('archived')
+);
+
 const assetDistributionArgs = {
   distributionType: v.optional(distributionTypeValidator),
   destination: v.optional(v.string()),
@@ -281,6 +294,10 @@ const assetDistributionArgs = {
   centralIdea: v.optional(v.string()),
   copy: v.optional(v.string()),
   contentKind: v.optional(contentKindValidator),
+  workflowStage: v.optional(workflowStageValidator),
+  productionMethod: v.optional(v.string()),
+  durationTarget: v.optional(v.string()),
+  visualDirection: v.optional(v.string()),
   publishUrl: v.optional(v.string()),
   notionPacketUrl: v.optional(v.string()),
   brief: v.optional(v.string()),
@@ -338,6 +355,10 @@ export const createAsset = mutation({
       centralIdea: args.centralIdea,
       copy: args.copy,
       contentKind: args.contentKind,
+      workflowStage: args.workflowStage ?? 'planning',
+      productionMethod: args.productionMethod,
+      durationTarget: args.durationTarget,
+      visualDirection: args.visualDirection,
       publishUrl: args.publishUrl,
       notionPacketUrl: args.notionPacketUrl,
       brief: args.brief,
@@ -382,6 +403,15 @@ export const updateAsset = mutation({
         },
         'asset_approval'
       );
+      const workflowStage = merged.workflowStage ?? 'planning';
+      const copyOnly = merged.contentKind === 'copy';
+      const hasCurrentVersion = !!merged.currentVersionId;
+      if (!(workflowStage === 'review' || workflowStage === 'approved' || workflowStage === 'scheduled' || workflowStage === 'published' || workflowStage === 'measured')) {
+        throw new Error('Asset must be in review or later before approval.');
+      }
+      if (!copyOnly && !hasCurrentVersion) {
+        throw new Error('Media assets need a current version before approval.');
+      }
     }
 
     await ctx.db.patch(assetId, {
@@ -471,6 +501,10 @@ export const setAssetVersionReviewState = mutation({
         },
         'asset_approval'
       );
+      const workflowStage = asset.workflowStage ?? 'planning';
+      if (!(workflowStage === 'review' || workflowStage === 'approved' || workflowStage === 'scheduled' || workflowStage === 'published' || workflowStage === 'measured')) {
+        throw new Error('Asset must be in review or later before approval.');
+      }
     }
 
     const now = new Date().toISOString();
@@ -486,6 +520,14 @@ export const setAssetVersionReviewState = mutation({
 
     await ctx.db.patch(args.assetId, {
       approvalState: mappedApprovalState,
+      workflowStage:
+        args.reviewState === 'in_review'
+          ? 'review'
+          : args.reviewState === 'approved'
+            ? 'approved'
+            : args.reviewState === 'needs_changes'
+              ? 'review'
+              : asset.workflowStage,
       currentVersionId: args.reviewState === 'approved' ? args.versionId : asset.currentVersionId,
       updatedAt: now,
     });
@@ -517,6 +559,15 @@ export const setAssetApprovalState = mutation({
         },
         'asset_approval'
       );
+      const workflowStage = asset.workflowStage ?? 'planning';
+      const copyOnly = asset.contentKind === 'copy';
+      const hasCurrentVersion = !!(args.versionId || asset.currentVersionId);
+      if (!(workflowStage === 'review' || workflowStage === 'approved' || workflowStage === 'scheduled' || workflowStage === 'published' || workflowStage === 'measured')) {
+        throw new Error('Asset must be in review or later before approval.');
+      }
+      if (!copyOnly && !hasCurrentVersion) {
+        throw new Error('Media assets need a current version before approval.');
+      }
     }
 
     if (args.versionId) {

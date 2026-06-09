@@ -242,6 +242,7 @@ export const createAssetFromCalendarItem = mutation({
       format: item.format,
       funnelStage: item.funnelStage ?? 'bridge',
       status: 'draft',
+      workflowStage: item.status === 'idea' ? 'planning' : item.status === 'brief' ? 'preproduction' : item.status === 'in_production' ? 'production' : item.status === 'needs_review' ? 'review' : item.status === 'approved' ? 'approved' : item.status === 'scheduled' ? 'scheduled' : item.status === 'published' ? 'published' : item.status === 'measured' ? 'measured' : 'planning',
       approvalState: 'pending',
       cta: item.cta,
       destination: item.destination,

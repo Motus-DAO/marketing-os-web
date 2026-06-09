@@ -59,6 +59,23 @@ export default defineSchema({
     objective: v.optional(v.string()),
     audienceSummary: v.optional(v.string()),
     status: v.string(),
+    workflowStage: v.optional(
+      v.union(
+        v.literal('planning'),
+        v.literal('preproduction'),
+        v.literal('production'),
+        v.literal('postproduction'),
+        v.literal('review'),
+        v.literal('approved'),
+        v.literal('scheduled'),
+        v.literal('published'),
+        v.literal('measured'),
+        v.literal('archived')
+      )
+    ),
+    productionMethod: v.optional(v.string()),
+    durationTarget: v.optional(v.string()),
+    visualDirection: v.optional(v.string()),
     version: v.optional(v.string()),
     sourceIdeaTitle: v.optional(v.string()),
     cta: v.optional(v.string()),
@@ -89,6 +106,7 @@ export default defineSchema({
     .index('by_project_status', ['projectId', 'status'])
     .index('by_project_platform', ['projectId', 'platform'])
     .index('by_project_approval_state', ['projectId', 'approvalState'])
+    .index('by_project_workflow_stage', ['projectId', 'workflowStage'])
     .index('by_campaign', ['campaignId']),
 
   assetVersions: defineTable({
