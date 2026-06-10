@@ -99,6 +99,7 @@ export default defineSchema({
     caption: v.optional(v.string()),
     adConcept: v.optional(v.string()),
     approvalState: v.optional(v.union(v.literal('pending'), v.literal('in_review'), v.literal('approved'), v.literal('rejected'), v.literal('needs_changes'))),
+    workflowStage: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
   })
