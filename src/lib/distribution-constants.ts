@@ -142,7 +142,14 @@ export function inferContentKind(format: string): ContentKindId {
   const f = format.toLowerCase();
   if (f.includes("reel") || f.includes("video") || f.includes("short")) return "video";
   if (f.includes("carousel")) return "carousel";
-  if (f.includes("message") || f.includes("email") || f.includes("post") && !f.includes("carousel"))
+  if (
+    f.includes("message") ||
+    f.includes("email") ||
+    f.includes("thread") ||
+    f.includes("reply") ||
+    f.includes("tweet") ||
+    (f.includes("post") && !f.includes("carousel"))
+  )
     return "copy";
   if (f.includes("story") || f.includes("image")) return "image";
   return "mixed";

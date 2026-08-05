@@ -8,7 +8,10 @@ import Link from "next/link";
 
 export function PublishingPacketSection({ asset }: { asset: any }) {
   const updateAsset = useMutation(api.dashboard.updateAsset);
-  const [open, setOpen] = useState(true);
+  const hasPacketContent = Boolean(
+    asset.brief || asset.script || asset.caption || asset.adConcept || asset.notionPacketUrl,
+  );
+  const [open, setOpen] = useState(hasPacketContent);
   const [isSaving, setIsSaving] = useState(false);
   const [brief, setBrief] = useState(asset.brief ?? "");
   const [script, setScript] = useState(asset.script ?? "");

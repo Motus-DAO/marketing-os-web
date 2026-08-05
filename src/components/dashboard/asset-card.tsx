@@ -15,10 +15,17 @@ function formatDate(value?: string | null) {
 }
 
 export function AssetCard({ asset }: { asset: any }) {
+  const textPreview = asset.copy || asset.hook || asset.caption || null;
   return (
     <Link href={`/assets/${asset._id}`} className="card asset-card">
       <div className="asset-thumb">
-        {asset.thumbnailUrl ? <img src={asset.thumbnailUrl} alt={asset.title} /> : <div className="thumb-placeholder">No preview</div>}
+        {asset.thumbnailUrl ? (
+          <img src={asset.thumbnailUrl} alt={asset.title} />
+        ) : textPreview ? (
+          <div className="thumb-text-preview">{textPreview}</div>
+        ) : (
+          <div className="thumb-placeholder">No preview</div>
+        )}
       </div>
       <div className="page-stack">
         <div className="card-header">
@@ -28,6 +35,7 @@ export function AssetCard({ asset }: { asset: any }) {
             tone={asset.approvalState === "approved" ? "success" : asset.approvalState === "rejected" ? "danger" : "warning"}
           />
         </div>
+        {textPreview ? <p className="asset-copy-preview muted">{textPreview}</p> : null}
         <div className="meta-grid muted">
           <span>{titleCase(asset.platform)}</span>
           <span>{titleCase(asset.format)}</span>
