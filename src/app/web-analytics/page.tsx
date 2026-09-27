@@ -12,7 +12,9 @@ export default function WebAnalyticsPage() {
         <p className="muted">
           Visitors, sources, paths, and heatmaps for MotusDAO public sites live in
           PostHog (Academia, Hub, Landing). This OS is the operator home; PostHog is
-          the data layer.
+          the data layer. Use the button below (or PostHog →{" "}
+          <strong>Dashboards → Your starter dashboard</strong>) for the Wix-style
+          overview.
         </p>
         <div style={{ marginTop: "1.25rem" }}>
           <a
@@ -24,6 +26,11 @@ export default function WebAnalyticsPage() {
             Open PostHog dashboard
           </a>
         </div>
+        <p className="muted" style={{ marginTop: "0.75rem", fontSize: "0.9rem" }}>
+          Tip: set <code>NEXT_PUBLIC_POSTHOG_APP_URL</code> to your project URL
+          (<code>https://us.posthog.com/project/…</code>) so this button lands on
+          MotusDAO, not the PostHog org picker.
+        </p>
       </section>
 
       <section className="panel">
