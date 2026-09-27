@@ -7,6 +7,7 @@ import { ReactNode } from "react";
 function sectionLabel(pathname: string) {
   if (pathname === "/") return "Project Home";
   if (pathname.startsWith("/calendar")) return "Content Calendar";
+  if (pathname.startsWith("/web-analytics")) return "Web Analytics";
   if (/^\/projects\/[^/]+\/[^/]+/.test(pathname)) return "Channel Content";
   if (pathname.startsWith("/projects")) return "Channels";
   if (pathname.startsWith("/assets")) return "Content Review";
@@ -31,6 +32,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
           <Link href="/calendar" className={pathname.startsWith("/calendar") ? "nav-link is-active" : "nav-link"}>
             Calendar
+          </Link>
+          <Link
+            href="/web-analytics"
+            className={pathname.startsWith("/web-analytics") ? "nav-link is-active" : "nav-link"}
+          >
+            Web Analytics
           </Link>
         </nav>
         <div className="header-meta">
