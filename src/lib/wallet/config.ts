@@ -19,24 +19,27 @@ export function isEmbeddedWaapLoginMethod(
 const OVERLAY_SELECTORS = [
   "#waap-wallet-iframe-container",
   "#silk-wallet-iframe-container",
+  "[id*='waap-wallet-iframe']",
+  "[id*='silk-wallet-iframe']",
 ];
 
 export function releaseHiddenWaapOverlayInput(): boolean {
   if (typeof window === "undefined") return false;
   let released = false;
   for (const selector of OVERLAY_SELECTORS) {
-    const element = document.querySelector<HTMLElement>(selector);
-    if (!element) continue;
-    const style = window.getComputedStyle(element);
-    const opacity = Number.parseFloat(style.opacity);
-    const isHidden =
-      style.display === "none" ||
-      style.visibility === "hidden" ||
-      (!Number.isNaN(opacity) && opacity === 0);
-    if (isHidden && style.pointerEvents !== "none") {
-      element.style.pointerEvents = "none";
-      released = true;
-    }
+    document.querySelectorAll(selector).forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      const style = window.getComputedStyle(node);
+      const opacity = Number.parseFloat(style.opacity);
+      const isHidden =
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        (!Number.isNaN(opacity) && opacity === 0);
+      if (isHidden && style.pointerEvents !== "none") {
+        node.style.pointerEvents = "none";
+        released = true;
+      }
+    });
   }
   return released;
 }
@@ -47,11 +50,16 @@ export function releaseWaapOverlayInput(): boolean {
   }
   let released = false;
   for (const selector of OVERLAY_SELECTORS) {
-    const element = document.querySelector<HTMLElement>(selector);
-    if (element && window.getComputedStyle(element).pointerEvents !== "none") {
-      element.style.pointerEvents = "none";
-      released = true;
-    }
+    document.querySelectorAll(selector).forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      if (window.getComputedStyle(node).pointerEvents !== "none") {
+        node.style.pointerEvents = "none";
+        released = true;
+      }
+    });
+  }
+  if (released) {
+    console.warn("[WAAP] Released wallet overlay pointer capture");
   }
   return released;
 }
