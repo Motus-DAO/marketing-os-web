@@ -2,6 +2,37 @@
 
 Authenticated marketing workflow for MotusDAO (projects, assets, calendar).
 
+## Authentication (WaaP + SIWE)
+
+Marketing OS uses **Human Tech WaaP** (email / Google) plus a **SIWE** session cookie
+(`mos_session`). Access is gated by an email allowlist.
+
+Flow:
+
+1. Connect with WaaP (email or Google)
+2. Share / confirm verified email via Human Tech `requestEmail()` when needed
+3. Sign the SIWE message (“Sign in to MotusDAO Marketing OS”)
+4. Server checks `AUTH_ALLOWED_EMAILS` and sets an httpOnly JWT cookie
+
+SIWE `chainId` is **42220 (Celo mainnet)** — same as MotusDAO Hub. Signing does not
+require Celo funds; it is only bound into the SIWE message.
+
+Nonces are **HMAC-signed with `AUTH_SECRET`** (stateless). They work on Vercel
+serverless without Prisma/Redis. A nonce can be replayed until its 5-minute TTL
+expires (acceptable for this allowlisted operator app).
+
+### Env vars (Vercel)
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AUTH_SECRET` | yes (prod) | Signs session JWTs + nonces |
+| `AUTH_ALLOWED_EMAILS` | yes | Comma-separated, case-insensitive. e.g. `aszalvarez@gmail.com` |
+| `NEXT_PUBLIC_APP_URL` | yes | Canonical origin for SIWE domain/uri (no trailing slash) |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | no | Enables external wallets in the WaaP modal |
+
+API routes: `/api/auth/nonce`, `/api/auth/verify`, `/api/auth/me`, `/api/auth/logout`.
+`/api/analytics/*` requires a valid session.
+
 ## Web analytics (PostHog) — Wix-style dashboard
 
 Route: `/web-analytics`
@@ -43,4 +74,5 @@ Do **not** put `phc_` project tokens on this app for collection.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). Copy `.env.example` → `.env.local`
+and set at least `AUTH_SECRET`, `AUTH_ALLOWED_EMAILS`, and Convex URLs.

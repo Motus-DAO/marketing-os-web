@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/app-providers";
 import { AppShell } from "@/components/layout/app-shell";
+import { AuthGate } from "@/components/auth/AuthGate";
 
 export const metadata: Metadata = {
   title: "Marketing OS",
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AppProviders>
-          <AppShell>{children}</AppShell>
+          <AuthGate>
+            <AppShell>{children}</AppShell>
+          </AuthGate>
         </AppProviders>
       </body>
     </html>

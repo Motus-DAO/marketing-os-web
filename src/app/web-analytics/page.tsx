@@ -315,7 +315,9 @@ export default function WebAnalyticsPage() {
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/analytics/overview?site=${site}&range=${range}`);
+        const res = await fetch(`/api/analytics/overview?site=${site}&range=${range}`, {
+          credentials: "include",
+        });
         const json = (await res.json()) as OverviewResponse;
         if (!cancelled) setData(json);
       } catch (error) {

@@ -12,14 +12,19 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@human.tech/waap-sdk": "^2.3.0",
     "convex": "^1.36.1",
+    "jsonwebtoken": "^9.0.3",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "thirdweb": "^5.119.4"
+    "siwe": "^3.0.0",
+    "thirdweb": "^5.119.4",
+    "viem": "^2.56.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

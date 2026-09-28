@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
+import { AuthHeaderStatus } from "@/components/auth/AuthGate";
 
 function sectionLabel(pathname: string) {
   if (pathname === "/") return "Project Home";
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="header-meta">
           <span>{sectionLabel(pathname)}</span>
+          <AuthHeaderStatus />
         </div>
       </header>
       <main className="app-main">{children}</main>
