@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAgentFromRequest, type AgentIdentity } from "./agent";
-import { getSessionFromRequest, type SessionPayload } from "./session";
+import { getSessionFromRequest, type AuthContext } from "./session";
 import { isEmailAllowed } from "./allowlist";
 
 export type Caller =
-  | { kind: "human"; session: SessionPayload }
+  | { kind: "human"; session: AuthContext }
   | AgentIdentity;
 
 export async function requireHumanOrAgent(
