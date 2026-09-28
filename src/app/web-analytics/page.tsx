@@ -2,6 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+type HeatmapSiteLink = {
+  id: string;
+  label: string;
+  url: string;
+  heatmapUrl: string;
+};
+
+type HeatmapPathLink = {
+  path: string;
+  views: number;
+  url: string;
+  heatmapUrl: string;
+};
+
 type OverviewResponse = {
   configured: boolean;
   error?: string;
@@ -12,10 +26,22 @@ type OverviewResponse = {
     visitors: number;
     pageviews: number;
     pagesPerVisit: number;
+    avgTimeOnPageSeconds?: number;
+    avgSessionSeconds?: number;
+    bounceRate?: number;
+    sessions?: number;
   };
   trend?: Array<{ day: string; pageviews: number; visitors: number }>;
   topPages?: Array<{ path: string; views: number; visitors: number }>;
   topSources?: Array<{ source: string; views: number; visitors: number }>;
+  devices?: Array<{ device: string; views: number; visitors: number }>;
+  countries?: Array<{ country: string; views: number; visitors: number }>;
+  heatmaps?: {
+    projectUrl: string;
+    heatmapsHome: string;
+    sites: HeatmapSiteLink[];
+    topPaths?: HeatmapPathLink[];
+  };
 };
 
 const SITES = [
@@ -31,6 +57,27 @@ const RANGES = [
   { id: "30d", label: "30 days" },
 ] as const;
 
+const FALLBACK_HEATMAP_SITES: HeatmapSiteLink[] = [
+  {
+    id: "academia",
+    label: "Academia",
+    url: "https://academia.motusdao.org",
+    heatmapUrl: "",
+  },
+  {
+    id: "hub",
+    label: "Hub",
+    url: "https://app.motusdao.org",
+    heatmapUrl: "",
+  },
+  {
+    id: "landing",
+    label: "Landing",
+    url: "https://www.motusdao.org",
+    heatmapUrl: "",
+  },
+];
+
 const POSTHOG_APP_URL =
   process.env.NEXT_PUBLIC_POSTHOG_APP_URL ?? "https://us.posthog.com";
 const EMBED_URL = process.env.NEXT_PUBLIC_POSTHOG_EMBED_DASHBOARD_URL ?? "";
@@ -40,8 +87,21 @@ const ROADMAP = [
   { title: "Traffic sources", status: "now", note: "Referring domains" },
   { title: "Top pages", status: "now", note: "Paths by views" },
   { title: "Embedded PostHog dashboard", status: "now", note: "Optional iframe share link" },
-  { title: "Heatmaps / click maps", status: "next", note: "Link or embed from PostHog Heatmaps" },
-  { title: "Time on page / bounce", status: "next", note: "Web analytics extras via HogQL" },
+  {
+    title: "Heatmaps / click maps",
+    status: "now",
+    note: "Deep links into PostHog Heatmaps per site URL",
+  },
+  {
+    title: "Time on page / bounce",
+    status: "now",
+    note: "Avg time, session duration, bounce via HogQL",
+  },
+  {
+    title: "Devices & geo",
+    status: "now",
+    note: "Desktop/mobile/tablet + country breakdown",
+  },
   { title: "Funnels (Academia → Hub pay)", status: "next", note: "MF-14 academy funnel" },
   { title: "UTM campaigns", status: "next", note: "Break down by utm_source / campaign" },
   { title: "Session replay", status: "later", note: "Keep off until sampling + privacy review" },
@@ -49,6 +109,19 @@ const ROADMAP = [
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
+}
+
+function formatDuration(seconds: number | undefined) {
+  if (seconds == null || Number.isNaN(seconds) || seconds <= 0) return "—";
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}m ${secs}s`;
+}
+
+function formatPercent(value: number | undefined) {
+  if (value == null || Number.isNaN(value)) return "—";
+  return `${value}%`;
 }
 
 function BarList({
@@ -131,6 +204,87 @@ function PostHogEmbed({ src }: { src: string }) {
   );
 }
 
+function HeatmapsPanel({
+  heatmaps,
+  siteFilter,
+}: {
+  heatmaps?: OverviewResponse["heatmaps"];
+  siteFilter: (typeof SITES)[number]["id"];
+}) {
+  const heatmapsHome =
+    heatmaps?.heatmapsHome ||
+    (POSTHOG_APP_URL.includes("/project/")
+      ? `${POSTHOG_APP_URL.replace(/\/$/, "")}/heatmaps`
+      : `${POSTHOG_APP_URL.replace(/\/$/, "")}/heatmaps`);
+
+  const sites = useMemo(() => {
+    const fromApi = heatmaps?.sites?.length ? heatmaps.sites : FALLBACK_HEATMAP_SITES;
+    if (siteFilter === "all") return fromApi;
+    return fromApi.filter((s) => s.id === siteFilter);
+  }, [heatmaps, siteFilter]);
+
+  const topPaths = heatmaps?.topPaths ?? [];
+
+  return (
+    <section className="panel">
+      <div className="card-header">
+        <div>
+          <p className="eyebrow">Heatmaps</p>
+          <h2>Click maps in PostHog</h2>
+          <p className="muted">
+            Marketing OS does not invent heatmap overlays — open PostHog Heatmaps for each
+            tracked homepage. If the page URL does not load automatically, paste it into
+            PostHog’s URL field.
+          </p>
+        </div>
+        <a className="secondary-button" href={heatmapsHome} target="_blank" rel="noreferrer">
+          Open Heatmaps
+        </a>
+      </div>
+
+      <ul className="analytics-heatmap-list">
+        {sites.map((site) => {
+          const href = site.heatmapUrl || heatmapsHome;
+          return (
+            <li key={site.id} className="analytics-heatmap-item">
+              <div>
+                <strong>{site.label}</strong>
+                <p className="muted">{site.url}</p>
+              </div>
+              <div className="analytics-heatmap-actions">
+                <a className="secondary-button" href={href} target="_blank" rel="noreferrer">
+                  Heatmap
+                </a>
+                <a className="chip" href={site.url} target="_blank" rel="noreferrer">
+                  Visit site
+                </a>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {topPaths.length > 0 && (
+        <div className="analytics-heatmap-paths">
+          <p className="eyebrow">Top paths (this site)</p>
+          <ul className="analytics-heatmap-path-list">
+            {topPaths.map((item) => (
+              <li key={item.url}>
+                <span className="analytics-bar-label">
+                  {item.path} · {formatNumber(item.views)} views
+                </span>
+                <a href={item.heatmapUrl} target="_blank" rel="noreferrer">
+                  Open heatmap
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function WebAnalyticsPage() {
   const [site, setSite] = useState<(typeof SITES)[number]["id"]>("all");
   const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("7d");
@@ -164,6 +318,8 @@ export default function WebAnalyticsPage() {
 
   const emptyPages = useMemo(() => (data?.topPages?.length ?? 0) === 0, [data]);
   const emptySources = useMemo(() => (data?.topSources?.length ?? 0) === 0, [data]);
+  const emptyDevices = useMemo(() => (data?.devices?.length ?? 0) === 0, [data]);
+  const emptyCountries = useMemo(() => (data?.countries?.length ?? 0) === 0, [data]);
 
   return (
     <div className="page-stack analytics-page">
@@ -173,13 +329,13 @@ export default function WebAnalyticsPage() {
             <p className="eyebrow">Web analytics</p>
             <h1>Site dashboard</h1>
             <p className="muted">
-              Wix-style overview for MotusDAO public traffic — visitors, sources, and
-              top pages — powered by PostHog. Heatmaps and funnels come next.
+              Wix-style overview for MotusDAO public traffic — visitors, engagement, devices,
+              geo, and heatmap entry points — powered by PostHog.
             </p>
           </div>
           <a
             className="secondary-button"
-            href={POSTHOG_APP_URL}
+            href={data?.heatmaps?.projectUrl || POSTHOG_APP_URL}
             target="_blank"
             rel="noreferrer"
           >
@@ -244,14 +400,22 @@ export default function WebAnalyticsPage() {
               <code>POSTHOG_PERSONAL_API_KEY</code>, <code>POSTHOG_PROJECT_ID</code>, optional{" "}
               <code>POSTHOG_HOST=https://us.posthog.com</code>
             </li>
+            <li>
+              Optional: set <code>NEXT_PUBLIC_POSTHOG_APP_URL</code> to{" "}
+              <code>https://us.posthog.com/project/&lt;id&gt;</code> for heatmap deep links.
+            </li>
             <li>Redeploy Marketing OS, then refresh this page.</li>
           </ol>
         </section>
       )}
 
+      {!loading && (
+        <HeatmapsPanel heatmaps={data?.heatmaps} siteFilter={site} />
+      )}
+
       {!loading && data?.configured && !data.error && data.kpis && (
         <>
-          <section className="analytics-kpi-grid">
+          <section className="analytics-kpi-grid analytics-kpi-grid-wide">
             <article className="panel analytics-kpi">
               <p className="eyebrow">Visitors</p>
               <p className="analytics-kpi-value">{formatNumber(data.kpis.visitors)}</p>
@@ -266,6 +430,30 @@ export default function WebAnalyticsPage() {
               <p className="eyebrow">Pages / visit</p>
               <p className="analytics-kpi-value">{data.kpis.pagesPerVisit}</p>
               <p className="muted">Pageviews ÷ visitors</p>
+            </article>
+            <article className="panel analytics-kpi">
+              <p className="eyebrow">Avg time on page</p>
+              <p className="analytics-kpi-value">
+                {formatDuration(data.kpis.avgTimeOnPageSeconds)}
+              </p>
+              <p className="muted">From $pageleave duration</p>
+            </article>
+            <article className="panel analytics-kpi">
+              <p className="eyebrow">Avg session</p>
+              <p className="analytics-kpi-value">
+                {formatDuration(data.kpis.avgSessionSeconds)}
+              </p>
+              <p className="muted">Pageview span per session</p>
+            </article>
+            <article className="panel analytics-kpi">
+              <p className="eyebrow">Bounce rate</p>
+              <p className="analytics-kpi-value">{formatPercent(data.kpis.bounceRate)}</p>
+              <p className="muted">
+                1-page sessions
+                {data.kpis.sessions != null
+                  ? ` · ${formatNumber(data.kpis.sessions)} sessions`
+                  : ""}
+              </p>
             </article>
           </section>
 
@@ -305,6 +493,27 @@ export default function WebAnalyticsPage() {
                 <p className="muted">No source data yet.</p>
               ) : (
                 <BarList items={data.topSources || []} labelKey="source" valueKey="views" />
+              )}
+            </article>
+          </section>
+
+          <section className="analytics-split">
+            <article className="panel">
+              <p className="eyebrow">Devices</p>
+              <h2>Desktop / mobile / tablet</h2>
+              {emptyDevices ? (
+                <p className="muted">No device data yet.</p>
+              ) : (
+                <BarList items={data.devices || []} labelKey="device" valueKey="views" />
+              )}
+            </article>
+            <article className="panel">
+              <p className="eyebrow">Countries</p>
+              <h2>Where visitors are</h2>
+              {emptyCountries ? (
+                <p className="muted">No geo data yet.</p>
+              ) : (
+                <BarList items={data.countries || []} labelKey="country" valueKey="views" />
               )}
             </article>
           </section>
