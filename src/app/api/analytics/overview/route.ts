@@ -56,6 +56,12 @@ export async function GET(request: NextRequest) {
   const pageleaveWhere = `event = '$pageleave' AND timestamp >= now() - ${interval}${siteSql}`;
 
   try {
+    // UTM params are set on $pageview when the landing URL includes ?utm_*.
+    // Prefer event properties (utm_source / utm_medium / utm_campaign) over person $initial_*.
+    const utmSourceExpr = `coalesce(nullIf(toString(properties.utm_source), ''), '(none)')`;
+    const utmMediumExpr = `coalesce(nullIf(toString(properties.utm_medium), ''), '(none)')`;
+    const utmCampaignExpr = `coalesce(nullIf(toString(properties.utm_campaign), ''), '(none)')`;
+
     const [
       totals,
       trend,
@@ -66,6 +72,9 @@ export async function GET(request: NextRequest) {
       bounce,
       devices,
       countries,
+      utmSources,
+      utmCampaigns,
+      utmCombos,
     ] = await Promise.all([
       runHogQL(
         `SELECT count() AS pageviews, count(DISTINCT distinct_id) AS visitors
@@ -164,6 +173,44 @@ export async function GET(request: NextRequest) {
          LIMIT 10`,
         "mos_overview_countries",
       ),
+      runHogQL(
+        `SELECT
+           ${utmSourceExpr} AS utm_source,
+           count() AS views,
+           count(DISTINCT distinct_id) AS visitors
+         FROM events
+         WHERE ${pageviewWhere}
+         GROUP BY utm_source
+         ORDER BY views DESC
+         LIMIT 8`,
+        "mos_overview_utm_sources",
+      ),
+      runHogQL(
+        `SELECT
+           ${utmCampaignExpr} AS utm_campaign,
+           count() AS views,
+           count(DISTINCT distinct_id) AS visitors
+         FROM events
+         WHERE ${pageviewWhere}
+         GROUP BY utm_campaign
+         ORDER BY views DESC
+         LIMIT 8`,
+        "mos_overview_utm_campaigns",
+      ),
+      runHogQL(
+        `SELECT
+           ${utmSourceExpr} AS source,
+           ${utmMediumExpr} AS medium,
+           ${utmCampaignExpr} AS campaign,
+           count() AS views,
+           count(DISTINCT distinct_id) AS visitors
+         FROM events
+         WHERE ${pageviewWhere}
+         GROUP BY source, medium, campaign
+         ORDER BY views DESC
+         LIMIT 15`,
+        "mos_overview_utm_combos",
+      ),
     ]);
 
     const totalRow = totals.results?.[0];
@@ -219,6 +266,23 @@ export async function GET(request: NextRequest) {
         country: str(row, 0),
         views: num(row, 1),
         visitors: num(row, 2),
+      })),
+      utmSources: (utmSources.results || []).map((row) => ({
+        source: str(row, 0) || "(none)",
+        views: num(row, 1),
+        visitors: num(row, 2),
+      })),
+      utmCampaigns: (utmCampaigns.results || []).map((row) => ({
+        campaign: str(row, 0) || "(none)",
+        views: num(row, 1),
+        visitors: num(row, 2),
+      })),
+      utmCombos: (utmCombos.results || []).map((row) => ({
+        source: str(row, 0) || "(none)",
+        medium: str(row, 1) || "(none)",
+        campaign: str(row, 2) || "(none)",
+        views: num(row, 3),
+        visitors: num(row, 4),
       })),
       heatmaps: {
         ...heatmaps,

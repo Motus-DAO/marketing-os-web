@@ -36,6 +36,15 @@ type OverviewResponse = {
   topSources?: Array<{ source: string; views: number; visitors: number }>;
   devices?: Array<{ device: string; views: number; visitors: number }>;
   countries?: Array<{ country: string; views: number; visitors: number }>;
+  utmSources?: Array<{ source: string; views: number; visitors: number }>;
+  utmCampaigns?: Array<{ campaign: string; views: number; visitors: number }>;
+  utmCombos?: Array<{
+    source: string;
+    medium: string;
+    campaign: string;
+    views: number;
+    visitors: number;
+  }>;
   heatmaps?: {
     projectUrl: string;
     heatmapsHome: string;
@@ -102,8 +111,12 @@ const ROADMAP = [
     status: "now",
     note: "Desktop/mobile/tablet + country breakdown",
   },
+  {
+    title: "UTM campaigns",
+    status: "now",
+    note: "utm_source / utm_campaign / combined source·medium·campaign",
+  },
   { title: "Funnels (Academia → Hub pay)", status: "next", note: "MF-14 academy funnel" },
-  { title: "UTM campaigns", status: "next", note: "Break down by utm_source / campaign" },
   { title: "Session replay", status: "later", note: "Keep off until sampling + privacy review" },
 ];
 
@@ -321,6 +334,27 @@ export default function WebAnalyticsPage() {
   const emptyDevices = useMemo(() => (data?.devices?.length ?? 0) === 0, [data]);
   const emptyCountries = useMemo(() => (data?.countries?.length ?? 0) === 0, [data]);
 
+  const taggedUtmSources = useMemo(
+    () => (data?.utmSources || []).filter((row) => row.source !== "(none)"),
+    [data],
+  );
+  const taggedUtmCampaigns = useMemo(
+    () => (data?.utmCampaigns || []).filter((row) => row.campaign !== "(none)"),
+    [data],
+  );
+  const taggedUtmCombos = useMemo(
+    () =>
+      (data?.utmCombos || []).filter(
+        (row) =>
+          row.source !== "(none)" || row.medium !== "(none)" || row.campaign !== "(none)",
+      ),
+    [data],
+  );
+  const hasAnyUtm =
+    taggedUtmSources.length > 0 ||
+    taggedUtmCampaigns.length > 0 ||
+    taggedUtmCombos.length > 0;
+
   return (
     <div className="page-stack analytics-page">
       <section className="panel analytics-hero">
@@ -516,6 +550,92 @@ export default function WebAnalyticsPage() {
                 <BarList items={data.countries || []} labelKey="country" valueKey="views" />
               )}
             </article>
+          </section>
+
+          <section className="panel">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">Campaigns (UTM)</p>
+                <h2>Where campaign traffic comes from</h2>
+                <p className="muted">
+                  Breakdown of <code>utm_source</code>, <code>utm_medium</code>, and{" "}
+                  <code>utm_campaign</code> on <code>$pageview</code> events. Tag marketing
+                  links with query params so this fills in.
+                </p>
+              </div>
+            </div>
+
+            {!hasAnyUtm ? (
+              <p className="muted analytics-utm-empty">
+                No tagged campaign traffic in this range. Add{" "}
+                <code>?utm_source=…&amp;utm_medium=…&amp;utm_campaign=…</code> to marketing
+                links (email, social, ads) so PostHog can attribute pageviews.
+              </p>
+            ) : (
+              <>
+                <div className="analytics-split">
+                  <article>
+                    <p className="eyebrow">utm_source</p>
+                    <h3 className="analytics-subhead">Top sources</h3>
+                    {taggedUtmSources.length === 0 ? (
+                      <p className="muted">No utm_source values yet.</p>
+                    ) : (
+                      <BarList
+                        items={taggedUtmSources}
+                        labelKey="source"
+                        valueKey="views"
+                      />
+                    )}
+                  </article>
+                  <article>
+                    <p className="eyebrow">utm_campaign</p>
+                    <h3 className="analytics-subhead">Top campaigns</h3>
+                    {taggedUtmCampaigns.length === 0 ? (
+                      <p className="muted">No utm_campaign values yet.</p>
+                    ) : (
+                      <BarList
+                        items={taggedUtmCampaigns}
+                        labelKey="campaign"
+                        valueKey="views"
+                      />
+                    )}
+                  </article>
+                </div>
+
+                {taggedUtmCombos.length > 0 && (
+                  <div className="analytics-utm-table-wrap">
+                    <p className="eyebrow">Combined</p>
+                    <h3 className="analytics-subhead">Source / medium / campaign</h3>
+                    <div className="analytics-table-scroll">
+                      <table className="analytics-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Source</th>
+                            <th scope="col">Medium</th>
+                            <th scope="col">Campaign</th>
+                            <th scope="col">Views</th>
+                            <th scope="col">Visitors</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {taggedUtmCombos.map((row) => (
+                            <tr
+                              key={`${row.source}|${row.medium}|${row.campaign}`}
+                            >
+                              <td>{row.source}</td>
+                              <td>{row.medium}</td>
+                              <td>{row.campaign}</td>
+                              <td>{formatNumber(row.views)}</td>
+                              <td>{formatNumber(row.visitors)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </section>
         </>
       )}

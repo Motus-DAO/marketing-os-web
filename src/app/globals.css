@@ -1046,6 +1046,56 @@ h1, h2, h3 {
   gap: 1.25rem;
 }
 
+.analytics-subhead {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.analytics-utm-empty {
+  margin-top: 1rem;
+}
+
+.analytics-utm-table-wrap {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.analytics-table-scroll {
+  margin-top: 0.85rem;
+  overflow-x: auto;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.analytics-table th,
+.analytics-table td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.analytics-table th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.analytics-table td:nth-child(4),
+.analytics-table td:nth-child(5),
+.analytics-table th:nth-child(4),
+.analytics-table th:nth-child(5) {
+  text-align: right;
+}
+
 .analytics-bar-list {
   list-style: none;
   margin: 1rem 0 0;

@@ -6,10 +6,14 @@ Authenticated marketing workflow for MotusDAO (projects, assets, calendar).
 
 Route: `/web-analytics`
 
-Shows visitors, pageviews, trend, top pages, traffic sources, engagement (avg time on
+Shows visitors, pageviews, trend, top pages, traffic sources, UTM campaigns
+(`utm_source` / `utm_medium` / `utm_campaign` on `$pageview`), engagement (avg time on
 page, session duration, bounce rate), devices, and countries inside Marketing OS via
 PostHog’s HogQL query API. Heatmaps are deep links into PostHog Heatmaps (no fake
 overlays). Optional iframe embed for a shared PostHog dashboard.
+
+Tag marketing links with `?utm_source=&utm_medium=&utm_campaign=` so the Campaigns
+section on `/web-analytics` can attribute traffic.
 
 ### Public sites (collect events)
 
