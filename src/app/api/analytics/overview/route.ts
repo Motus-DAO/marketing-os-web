@@ -8,8 +8,10 @@ import {
   runHogQL,
   siteFilterSql,
 } from "@/lib/posthog-query";
-import { getSessionFromRequest } from "@/lib/auth/session";
-import { isEmailAllowed } from "@/lib/auth/allowlist";
+import {
+  isCallerResponse,
+  requireHumanOrAgent,
+} from "@/lib/auth/require-caller";
 
 export const dynamic = "force-dynamic";
 
@@ -30,13 +32,8 @@ function round1(value: number) {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getSessionFromRequest(request);
-  if (!session || !isEmailAllowed(session.email)) {
-    return NextResponse.json(
-      { error: "Authentication required" },
-      { status: 401 },
-    );
-  }
+  const caller = await requireHumanOrAgent(request);
+  if (isCallerResponse(caller)) return caller;
 
   const site = request.nextUrl.searchParams.get("site") || "all";
   const range = request.nextUrl.searchParams.get("range") || "7d";

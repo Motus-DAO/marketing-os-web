@@ -31,7 +31,35 @@ expires (acceptable for this allowlisted operator app).
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | no | Enables external wallets in the WaaP modal |
 
 API routes: `/api/auth/nonce`, `/api/auth/verify`, `/api/auth/me`, `/api/auth/logout`.
-`/api/analytics/*` requires a valid session.
+`/api/analytics/*` accepts a human SIWE session **or** an agent Bearer token.
+
+## Agent API (machine access)
+
+Agents should **not** use WaaP/SIWE. They call HTTP APIs with a shared secret:
+
+```bash
+# Generate a token
+openssl rand -base64 32
+
+# Vercel (Secret):
+# AUTH_AGENT_TOKEN=<that value>
+# or multiple: AUTH_AGENT_TOKENS=hermes:<token1>,openclaw:<token2>
+```
+
+```bash
+curl -sS https://marketing-os.motusdao.org/api/agent/health \
+  -H "Authorization: Bearer $AUTH_AGENT_TOKEN"
+
+curl -sS "https://marketing-os.motusdao.org/api/agent/analytics/overview?site=all&range=7d" \
+  -H "Authorization: Bearer $AUTH_AGENT_TOKEN"
+```
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AUTH_AGENT_TOKEN` | one of these | Single token → agent id `default` |
+| `AUTH_AGENT_TOKENS` | one of these | `id:token,id2:token2` |
+
+Human UI auth stays unchanged (`AUTH_SECRET`, `AUTH_ALLOWED_EMAILS`, WaaP).
 
 ## Web analytics (PostHog) — Wix-style dashboard
 
