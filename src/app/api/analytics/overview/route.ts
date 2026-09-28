@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
       utmSources,
       utmCampaigns,
       utmCombos,
+      topCtas,
     ] = await Promise.all([
       runHogQL(
         `SELECT count() AS pageviews, count(DISTINCT distinct_id) AS visitors
@@ -211,6 +212,19 @@ export async function GET(request: NextRequest) {
          LIMIT 15`,
         "mos_overview_utm_combos",
       ),
+      runHogQL(
+        `SELECT
+           coalesce(nullIf(toString(properties.label), ''), '(untitled)') AS label,
+           count() AS clicks,
+           count(DISTINCT distinct_id) AS visitors
+         FROM events
+         WHERE event = 'cta_click'
+           AND timestamp >= now() - ${interval}${siteSql}
+         GROUP BY label
+         ORDER BY clicks DESC
+         LIMIT 12`,
+        "mos_overview_top_ctas",
+      ),
     ]);
 
     const totalRow = totals.results?.[0];
@@ -283,6 +297,11 @@ export async function GET(request: NextRequest) {
         campaign: str(row, 2) || "(none)",
         views: num(row, 3),
         visitors: num(row, 4),
+      })),
+      topCtas: (topCtas.results || []).map((row) => ({
+        label: str(row, 0) || "(untitled)",
+        clicks: num(row, 1),
+        visitors: num(row, 2),
       })),
       heatmaps: {
         ...heatmaps,

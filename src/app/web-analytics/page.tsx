@@ -45,6 +45,7 @@ type OverviewResponse = {
     views: number;
     visitors: number;
   }>;
+  topCtas?: Array<{ label: string; clicks: number; visitors: number }>;
   heatmaps?: {
     projectUrl: string;
     heatmapsHome: string;
@@ -115,6 +116,11 @@ const ROADMAP = [
     title: "UTM campaigns",
     status: "now",
     note: "utm_source / utm_campaign / combined source·medium·campaign",
+  },
+  {
+    title: "Top CTAs",
+    status: "now",
+    note: "Named cta_click events by label (PostHog HogQL)",
   },
   { title: "Funnels (Academia → Hub pay)", status: "next", note: "MF-14 academy funnel" },
   { title: "Session replay", status: "later", note: "Keep off until sampling + privacy review" },
@@ -333,6 +339,7 @@ export default function WebAnalyticsPage() {
   const emptySources = useMemo(() => (data?.topSources?.length ?? 0) === 0, [data]);
   const emptyDevices = useMemo(() => (data?.devices?.length ?? 0) === 0, [data]);
   const emptyCountries = useMemo(() => (data?.countries?.length ?? 0) === 0, [data]);
+  const emptyCtas = useMemo(() => (data?.topCtas?.length ?? 0) === 0, [data]);
 
   const taggedUtmSources = useMemo(
     () => (data?.utmSources || []).filter((row) => row.source !== "(none)"),
@@ -550,6 +557,27 @@ export default function WebAnalyticsPage() {
                 <BarList items={data.countries || []} labelKey="country" valueKey="views" />
               )}
             </article>
+          </section>
+
+          <section className="panel">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">Top CTAs</p>
+                <h2>Which buttons get clicked</h2>
+                <p className="muted">
+                  Ranked <code>cta_click</code> events by <code>properties.label</code> from
+                  Academia, Hub, and Landing.
+                </p>
+              </div>
+            </div>
+            {emptyCtas ? (
+              <p className="muted">
+                No named CTA clicks in this range yet. Deploy the instrumented public sites,
+                click a primary button, then refresh.
+              </p>
+            ) : (
+              <BarList items={data.topCtas || []} labelKey="label" valueKey="clicks" />
+            )}
           </section>
 
           <section className="panel">
