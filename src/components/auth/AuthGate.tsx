@@ -12,7 +12,10 @@ import {
   isUserRejectedSignError,
   logoutAppSession,
 } from "@/lib/auth/client";
-import { releaseWaapOverlayInput } from "@/lib/wallet/config";
+import {
+  releaseHiddenWaapOverlayInput,
+  releaseWaapOverlayInput,
+} from "@/lib/wallet/waap-modal-recovery";
 
 type AccessState =
   | "loading"
@@ -70,20 +73,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     void checkAccess();
   }, [checkAccess]);
 
-  // Human Tech often leaves an invisible iframe that steals clicks after login.
-  useEffect(() => {
-    if (
-      access === "needs_signature" ||
-      access === "needs_email" ||
-      access === "forbidden" ||
-      access === "unauthenticated"
-    ) {
-      releaseWaapOverlayInput();
-      const t = window.setTimeout(() => releaseWaapOverlayInput(), 300);
-      return () => window.clearTimeout(t);
-    }
-  }, [access]);
-
   const handleLogin = async () => {
     setBusy(true);
     setError(null);
@@ -122,7 +111,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   };
 
   const handleSignIn = async () => {
-    releaseWaapOverlayInput();
     if (!provider) {
       setError("Wallet no disponible. Recarga la página e intenta de nuevo.");
       return;
@@ -167,6 +155,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
       setAccess("needs_signature");
     } finally {
       setSigning(false);
+      releaseHiddenWaapOverlayInput();
+      window.setTimeout(() => {
+        releaseHiddenWaapOverlayInput();
+        releaseWaapOverlayInput();
+      }, 300);
     }
   };
 

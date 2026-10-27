@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { WaaPProvider } from "@/lib/contexts/WaaPProvider";
 import { AppSessionProvider } from "@/components/auth/AppSessionProvider";
+import { WaapStuckModalGuard } from "@/components/wallet/WaapStuckModalGuard";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -17,7 +18,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ConvexProvider client={client}>
       <WaaPProvider>
-        <AppSessionProvider>{children}</AppSessionProvider>
+        <AppSessionProvider>
+          <WaapStuckModalGuard />
+          {children}
+        </AppSessionProvider>
       </WaaPProvider>
     </ConvexProvider>
   );

@@ -10,12 +10,13 @@ import {
   type ReactNode,
 } from "react";
 import type { Address } from "viem";
+import { getWalletConnectProjectId } from "@/lib/wallet/config";
 import {
-  getWalletConnectProjectId,
   isEmbeddedWaapLoginMethod,
   releaseHiddenWaapOverlayInput,
   releaseWaapOverlayInput,
-} from "@/lib/wallet/config";
+  syncWaapOverlayInput,
+} from "@/lib/wallet/waap-modal-recovery";
 import { SIWE_CHAIN_ID } from "@/lib/auth/constants";
 
 export interface WaaPUser {
@@ -73,6 +74,7 @@ export function WaaPProvider({ children }: { children: ReactNode }) {
       null;
     let cancelPreload: (() => void) | undefined;
     let unsubscribeLifecycle: (() => void) | undefined;
+    let releaseTimer: number | undefined;
 
     const initializeWaaP = async () => {
       try {
@@ -147,6 +149,14 @@ export function WaaPProvider({ children }: { children: ReactNode }) {
           void provider.preload?.().catch(() => {});
         }
 
+        releaseTimer = window.setInterval(() => {
+          try {
+            syncWaapOverlayInput(waapSdk.getWaaPIframeDiagnostics());
+          } catch {
+            releaseHiddenWaapOverlayInput();
+          }
+        }, 1_000);
+
         await checkExistingSession(provider);
       } catch (error) {
         console.error("[WAAP] Init error:", error);
@@ -158,6 +168,7 @@ export function WaaPProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      if (releaseTimer) window.clearInterval(releaseTimer);
       unsubscribeLifecycle?.();
       cancelPreload?.();
       try {
